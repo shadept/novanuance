@@ -1,8 +1,6 @@
 import com.mongodb.client.MongoCollection
 import com.mongodb.client.MongoDatabase
 import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -31,7 +29,7 @@ interface ReciteRepository {
     suspend fun delete(recite: EmployeeRecite)
 }
 
-class MongoReciteRepository(database: MongoDatabase) : ReciteRepository {
+class MongoReceiptRepository(database: MongoDatabase) : ReciteRepository {
     private val collection: MongoCollection<EmployeeRecite> = database.getCollection("recites", EmployeeRecite::class.java)
 
     override suspend fun getAll(): List<EmployeeRecite> = collection.find().toList()

@@ -1,4 +1,4 @@
-import create from "zustand";
+import create, { GetState, SetState } from "zustand";
 import { Employee } from "./model/Employee";
 import { EmployeeRecite } from "./model/EmployeeRecite";
 import { PublicHoliday } from "./model/PublicHoliday";
@@ -11,6 +11,21 @@ export type State = {
     setEmployees: (employees: Employee[]) => void
     setRecites: (year: number, month: number, recites: EmployeeRecite[]) => void
 }
+
+
+export interface EmployeeState {
+    employees: Employee[]
+    loading: boolean
+}
+
+const employeesSlice = (set: SetState<EmployeeState>, get: GetState<EmployeeState>) => ({
+
+})
+
+
+
+
+
 
 export const useStore = create<State>(set => ({
     holidays: {},

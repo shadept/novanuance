@@ -15,7 +15,6 @@ type VacationsCalendarProps = {
 }
 
 export const VacationsCalendar: React.FC<VacationsCalendarProps> = ({ year, month, vacations, employees, holidays, onVacationChange }) => {
-    const { t } = useTranslation()
     const start = useMemo(() => new Date(Date.UTC(year, month - 1)), [year, month])
     const daysInMonth = new Date(year, month, 0).getDate()
 
@@ -31,7 +30,7 @@ export const VacationsCalendar: React.FC<VacationsCalendarProps> = ({ year, mont
                 <thead>
                     <tr>
                         <th className="border px-2 py-1"></th>
-                        {employees.map(e => <th key={e.id} className="border mx-auto py-3 font-semibold rotate-180" style={{ writingMode: "vertical-rl" }}>{e.name}</th>)}
+                        {employees.map(e => <th key={e.id} className="border mx-auto py-3 font-semibold rotate-180 vertical-rl">{e.name}</th>)}
                     </tr>
                 </thead>
                 <tbody>
@@ -54,7 +53,7 @@ const daysOfTheWeek = [
 
 const workdays = [1, 2, 3, 4, 5, 6]
 
-type VacationCalendarRow = {
+type VacationCalendarRowProps = {
     start: Date
     index: number
     vacations: Record<EmployeeId, (string | null)[]>
@@ -63,7 +62,7 @@ type VacationCalendarRow = {
     onVacationChange: (vacation: Vacation) => void
 }
 
-const VacationCalendarRow: React.FC<VacationCalendarRow> = ({ start, index, vacations, employees, holidays, onVacationChange }) => {
+const VacationCalendarRow: React.FC<VacationCalendarRowProps> = ({ start, index, vacations, employees, holidays, onVacationChange }) => {
     const { t } = useTranslation()
 
     const current = useMemo(() => {
@@ -98,7 +97,7 @@ const VacationCalendarRow: React.FC<VacationCalendarRow> = ({ start, index, vaca
                     const vacationId = vacations[e.id][index]
                     const isOnVacation = vacationId !== null
                     const buttonStyle = classnames("w-8 h-8 mx-auto", {
-                        ["bg-blue-500"]: isOnVacation
+                        "bg-blue-500": isOnVacation
                     })
                     tdProps.onClick = () => onVacationChange({ id: vacationId, employeeId: e.id, date: current, isOnVacation: !isOnVacation })
                     tdProps.children = <div className={buttonStyle} />

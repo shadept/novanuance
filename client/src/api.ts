@@ -4,8 +4,8 @@ import { PublicHoliday } from "./model/PublicHoliday"
 import { Vacation } from "./model/Vacation"
 
 
-export const fetchHolidays = async (year: number, countryCode: string = "PT") => {
-    const response = await fetch(`/holidays/${year}/${countryCode}`)
+export const fetchHolidays = async (year: number, month: number, countryCode: string = "PT") => {
+    const response = await fetch(`/holidays/${year}/${month}/${countryCode}`)
     const holidays = await response.json() as PublicHoliday[]
     return holidays.reduce((acc, curr) => (acc[curr.date] = curr, acc), {} as Record<string, PublicHoliday>)
 }

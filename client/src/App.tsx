@@ -14,13 +14,14 @@ import { Tab, Tabs } from './components/Tabs';
 import { Vacation } from './model/Vacation';
 import { VacationsCalendar } from './components/VacationCalendar';
 import { Employee } from './model/Employee';
+import { useRouter } from './hooks';
 
 
 const today = new Date()
 
 const useEmployeesQuery = () => useQuery('employees', fetchEmployees);
 
-const useHolidaysQuery = (year: number) => useQuery(['holidays', year], () => fetchHolidays(year))
+const useHolidaysQuery = (year: number, month: number) => useQuery(['holidays', year, month], () => fetchHolidays(year, month))
 
 const useRecitesQuery = (year: number, month: number, employeesQuery: UseQueryResult<Employee[], unknown>) => {
     const { t } = useTranslation()
@@ -90,17 +91,30 @@ const useVacationsQuery = (year: number, month: number, employeesQuery: UseQuery
     return { vacationQuery, mutateVacation }
 }
 
+type Param = {
+    year: number
+    month: number
+    tab: number
+}
+
+
 export const App: React.FC = () => {
     const { t, i18n } = useTranslation()
-    const [year, setYear] = useState(today.getFullYear())
-    const [month, setMonth] = useState(today.getMonth() + 1)
-    const [activeTab, setActiveTab] = useState(0)
+    const router = useRouter()
+    // @ts-ignore
+    const { year = today.getFullYear(), month = today.getMonth() + 1, tab = 0 }: Param = router.query
+    //! TODO: validate querystring
+
+    const setYear = (year: number) => router.push("/", { year, month, tab })
+    const setMonth = (month: number) => router.push("/", { year, month, tab })
+    const setTab = (tab: number) => router.push("/", { year, month, tab })
+
     const handleTabClick = useCallback((index: number) => {
-        setActiveTab(index)
+        setTab(index)
     }, [])
 
     const employeesQuery = useEmployeesQuery()
-    const holidaysQuery = useHolidaysQuery(year)
+    const holidaysQuery = useHolidaysQuery(year, month)
     const { recitesQuery, mutateRecite } = useRecitesQuery(year, month, employeesQuery)
     const handleReciteChange = useCallback((recite: EmployeeRecite) => {
         console.log("Setting recite", recite)
@@ -146,7 +160,7 @@ export const App: React.FC = () => {
                             <Select options={monthOptions} value={monthOptions[month - 1]} onChange={e => e && setMonth(e.value)} />
                         </div>
                     </div>
-                    <Tabs activeTab={activeTab} onChange={handleTabClick}>
+                    <Tabs activeTab={tab} onChange={handleTabClick}>
                         <Tab title={t("Recites")} icon="fas fa-receipt">
                             <ReciteCalendar
                                 year={year}
@@ -158,9 +172,6 @@ export const App: React.FC = () => {
                                 onReciteChange={handleReciteChange}
                             />
                         </Tab>
-                        <Tab title={t("Employees")} icon="fas fa-user-group">
-                            <EmployeeSummaryList employees={employeesQuery.data} recites={recitesQuery.data} />
-                        </Tab>
                         <Tab title={t("Vacations")} icon="fas fa-plane-departure">
                             <VacationsCalendar
                                 year={year}
@@ -169,6 +180,16 @@ export const App: React.FC = () => {
                                 holidays={holidaysQuery.data}
                                 employees={employeesQuery.data.filter(e => e.title !== "owner")}
                                 onVacationChange={handleVacationChange}
+                            />
+                        </Tab>
+                        <Tab title={t("Employees")} icon="fas fa-user-group">
+                            <EmployeeSummaryList
+                                year={year}
+                                month={month}
+                                employees={employeesQuery.data}
+                                holidays={holidaysQuery.data}
+                                vacations={vacationQuery.data}
+                                recites={recitesQuery.data}
                             />
                         </Tab>
                     </Tabs>

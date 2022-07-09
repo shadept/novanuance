@@ -16,3 +16,7 @@
   border: .25em solid;
   border-right-color: transparent;
 }
+
+.vertical-rl {
+  writing-mode: vertical-rl;
+}

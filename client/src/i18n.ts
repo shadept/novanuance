@@ -21,7 +21,10 @@ const resources: Resource = {
                 "base_salary": "Base salary",
                 "billed_after_tax": "Billed (fax TAX)",
                 "commission": "Commission (Billed * {{commission}}%)",
-                "total": "Total (base + commission)"
+                "meal_allowance": "Meal allowance ({{workedDays}} days)",
+                "total": "Total (base + commission)",
+                "bank_transfer": "Bank Transfer",
+                "in_cash": "In Cash",
             },
             "Oops... something went wrong": "Oops... something went wrong",
             "Please reload and try again": "Please reload and try again",
@@ -56,7 +59,10 @@ const resources: Resource = {
                 "base_salary": "Salário base",
                 "billed_after_tax": "Faturado (após IVA)",
                 "commission": "Comissão (faturado * {{commission}}%)",
-                "total": "Total (base + comissão)"
+                "meal_allowance": "Subsídio alimentação ({{workedDays}} dias)",
+                "total": "Total (base + comissão)",
+                "bank_transfer": "Transferência bancária",
+                "in_cash": "Em dinheiro",
             },
             "Oops... something went wrong": "Oops... algo correu mal",
             "Please reload and try again": "Por favor tenta outra vez",

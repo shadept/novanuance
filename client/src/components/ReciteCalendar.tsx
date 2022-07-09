@@ -4,7 +4,7 @@ import { Employee, EmployeeId } from "../model/Employee"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { tuple } from "../util"
 import { useTranslation } from "react-i18next"
-import CurrencyInput from "react-currency-input-field"
+import CurrencyInput, { CurrencyInputProps } from "react-currency-input-field"
 
 export type ReciteCalendarProps = {
     year: number
@@ -43,9 +43,10 @@ export const ReciteCalendar: React.FC<ReciteCalendarProps> = ({ year, month, hol
                     <td className="border px-3 py-1 font-semibold text-right">{t("Total")}</td>
                     {employees.map(e =>
                         <td key={e.id} className="border px-3 py-1 text-right">
-                            {recites[e.id].reduce((acc, cur) => acc + cur, 0.0).toFixed(2)} €
+                            {recites[e.id].reduce((acc, cur) => acc + cur, 0.0).toFixed(2)}&nbsp;€
                         </td>
                     )}
+                    <td className="border px-3 py-1 text-right">{employees.reduce((acc, cur) => acc + recites[cur.id].reduce((acc, cur) => acc + cur, 0.0), 0.0).toFixed(2)}&nbsp;€</td>
                 </tr>
             </tbody>
         </table>
@@ -94,8 +95,8 @@ const ReciteCalendarRow: React.FC<ReciteCalendarRowProps> = ({ index, start, emp
         .map(e => tuple(e.id, vacations[e.id][index]))
         .reduce((acc, [k, v]) => (acc[k] = v, acc), {} as Record<EmployeeId, string | null>)
     const rowRecites = employees
-        .map(e => tuple(e.id, rowVacations[e.id] === null ? recites[e.id][index] : null))
-        .reduce((acc, [k, v]) => (acc[k] = compare(current, tomorrow) > 0 ? v : null, acc), {} as Record<EmployeeId, number | null>)
+        .map(e => tuple(e.id, rowVacations[e.id] === null ? recites[e.id][index] : undefined))
+        .reduce((acc, [k, v]) => (acc[k] = compare(current, tomorrow) > 0 ? v : undefined, acc), {} as Record<EmployeeId, number | undefined>)
 
     const isWorkingDay = workdays.includes(current.getDay()) && holiday === undefined
 
@@ -129,7 +130,7 @@ const ReciteCalendarRow: React.FC<ReciteCalendarRowProps> = ({ index, start, emp
                 <td className="border px-3 py-1 text-right">
                     {Object.values(rowRecites).filter(r => r !== null).length === 0 ? "-"
                         : Object.values(rowRecites).reduce((acc: number, cur) => acc + (cur || 0.0), 0.0)
-                    } €
+                    }&nbsp;€
                 </td>
             )}
         </tr>
@@ -138,32 +139,34 @@ const ReciteCalendarRow: React.FC<ReciteCalendarRowProps> = ({ index, start, emp
 
 type ReciteInputProps = {
     employeeId: string
-    value: number | null
+    value: number | undefined
     onChange: (newValue: number, employeeId: string) => void
 }
 
 const ReciteInput: React.FC<ReciteInputProps> = ({ employeeId, value, onChange }) => {
-    const [localValue, setLocalValue] = useState(value?.toFixed(2))
-    const debouncedValue = useDebounce(localValue, 500)
+    const disabled = value === undefined
+    const [localValue, setLocalValue] = useState(value?.toFixed(2) || "")
+    const [float, setFloat] = useState(value)
+    const debouncedValue = useDebounce(float, 500)
 
     // call event handler after debounce has settled
     useEffect(() => {
-        const float = Number(debouncedValue)
-        !Number.isNaN(float) && value !== float && onChange(float, employeeId)
+        debouncedValue !== undefined && value !== debouncedValue &&
+            onChange(debouncedValue, employeeId)
     }, [value, debouncedValue, employeeId, onChange])
 
-    const handleChange = useCallback((newValue: string | undefined) => {
-        setLocalValue(newValue)
-    }, [])
+    const handleChange: CurrencyInputProps['onValueChange'] = (value, _, values) => {
+        setFloat(values?.float ?? undefined)
+        setLocalValue(value || "")
+    }
 
-    const disabled = localValue === undefined
     return (
         <div className="flex justify-end">
             {/* <input className="mx-3" type="checkbox" disabled={disabled} checked={true} /> */}
             <CurrencyInput className="w-24 px-1 text-right focus:outline-blue-500"
                 disabled={disabled}
                 placeholder="-"
-                suffix=" €"
+                suffix="&nbsp;€"
                 decimalScale={2}
                 value={!disabled ? (localValue || 0) : undefined}
                 onValueChange={handleChange} />

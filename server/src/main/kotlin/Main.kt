@@ -17,14 +17,15 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toLocalDate
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.litote.kmongo.KMongo
+import org.litote.kmongo.MongoOperator
 import org.litote.kmongo.serialization.registerSerializer
 import java.io.BufferedReader
 import java.io.FileNotFoundException
-import java.io.InputStream
 import java.util.*
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerContentNegotiation
@@ -142,19 +143,21 @@ fun Application.holidaysModule() {
         val global: Boolean = true,
     )
 
-    data class Parameters(val year: Int, val countryCode: String)
+    data class Parameters(val year: Int, val month: Int, val countryCode: String)
 
     fun PipelineContext<Unit, ApplicationCall>.holidayParameters(): Parameters {
         val year = call.parameters["year"]?.toInt() ?: error("Invalid year parameter")
+        val month = call.parameters["month"]?.toInt() ?: error("Invalid month parameters")
+        if (month < 1 || month > 12) error("Invalid month parameters")
         val countryCode = call.parameters["countryCode"] ?: error("Invalid countryCode parameters")
         if (!Locale.getISOCountries().contains(countryCode)) error("Invalid countryCode parameters")
-        return Parameters(year, countryCode)
+        return Parameters(year, month, countryCode)
     }
 
     routing {
-        route("/holidays/{year}/{countryCode}") {
+        route("/holidays/{year}/{month}/{countryCode}") {
             get {
-                val (year, countryCode) = holidayParameters()
+                val (year, month, countryCode) = holidayParameters()
                 val url = "https://date.nager.at/api/v3/PublicHolidays/$year/$countryCode"
                 val response: MutableList<Holiday> = httpClient.get(url).body()
                 response.removeIf { !it.global }
@@ -162,6 +165,7 @@ fun Application.holidaysModule() {
                     response.add(Holiday("$year-06-13", "Dia de Santo António", "St. Anthony's Day"))
                     response.sortBy { it.date }
                 }
+                response.removeIf { it.date.toLocalDate().month.value != month }
                 call.respond(response)
             }
         }
@@ -182,12 +186,17 @@ fun Application.reciteModule(database: MongoDatabase) {
         route("/recite") {
             get("/{year}/{month}") {
                 val (year, month) = reciteParameters()
-                val repo = MongoReciteRepository(database)
-                val recites = repo.getByMonth(year, month)
-                call.respond(recites)
+                val receiptRepo = MongoReceiptRepository(database)
+                val receipts = receiptRepo.getByMonth(year, month).toMutableList()
+                val vacationRepo = MongoVacationRepository(database)
+                val vacations = vacationRepo.getByMonth(year, month)
+                // remove vacations from receipts
+                // TODO remove holidays from receipts
+                receipts.removeIf { r -> vacations.any { v -> v.employeeId == r.employeeId && v.date == r.date } }
+                call.respond(receipts)
             }
             post { recite: EmployeeRecite ->
-                val repo = MongoReciteRepository(database)
+                val repo = MongoReceiptRepository(database)
                 repo.update(recite)
                 call.respond(HttpStatusCode.Created)
             }
