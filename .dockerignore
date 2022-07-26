@@ -1,4 +1,6 @@
-build/
-*/build/
-client/node_modules/
-!server/build/install
+Dockerfile
+.dockerignore
+node_modules
+npm-debug.log
+README.md
+.git

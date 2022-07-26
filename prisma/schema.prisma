@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider      = "prisma-client-js"
+    binaryTargets = ["native", "windows", "linux-arm64-openssl-1.1.x", "linux-musl"]
+}
+
+datasource db {
+    provider = "postgres"
+    url      = env("DATABASE_URL")
+}
+
+model Employee {
+    id                     String     @id @default(cuid())
+    name                   String
+    title                  String
+    baseSalary             Decimal
+    commissionPercent      Decimal
+    thresholdForCommission Decimal
+    taxRate                Decimal
+    Receipt                Receipt[]
+    Vacation               Vacation[]
+}
+
+model Receipt {
+    employee   Employee @relation(fields: [employeeId], references: [id])
+    employeeId String
+    date       DateTime
+    amount     Decimal
+
+    @@id([employeeId, date])
+}
+
+model Vacation {
+    id         String   @id @default(cuid())
+    employee   Employee @relation(fields: [employeeId], references: [id])
+    employeeId String
+    date       DateTime
+
+    @@unique([employeeId, date])
+}
+
+model InventoryItem {
+    id          String  @id @default(cuid())
+    name        String
+    brand       String
+    quantity    Int
+    price       Decimal
+    iconUrl     String
+    description String
+}
