@@ -19,8 +19,10 @@ model Employee {
     commissionPercent      Decimal
     thresholdForCommission Decimal
     taxRate                Decimal
-    Receipt                Receipt[]
-    Vacation               Vacation[]
+    hireDate               DateTime
+    terminationDate        DateTime?
+    receipts               Receipt[]
+    vacations              Vacation[]
 }
 
 model Receipt {
@@ -39,14 +41,4 @@ model Vacation {
     date       DateTime
 
     @@unique([employeeId, date])
-}
-
-model InventoryItem {
-    id          String  @id @default(cuid())
-    name        String
-    brand       String
-    quantity    Int
-    price       Decimal
-    iconUrl     String
-    description String
 }

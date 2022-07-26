@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-.vertical-rl {
-    writing-mode: vertical-rl;
+@layer utilities {
+    .stripped > *:nth-child(even) {
+        @apply bg-gray-50
+    }
+
+    .vertical-rl {
+        writing-mode: vertical-rl;
+    }
 }

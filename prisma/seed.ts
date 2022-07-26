@@ -11,6 +11,7 @@ async function seed() {
             commissionPercent: 0.0,
             thresholdForCommission: 0.0,
             taxRate: 0.23,
+            hireDate: new Date("1970-01-01"),
         },
         {
             name: "Carla",
@@ -19,6 +20,7 @@ async function seed() {
             commissionPercent: 0.15,
             thresholdForCommission: 1410.0,
             taxRate: 0.23,
+            hireDate: new Date("1970-01-01"),
         },
         {
             name: "Cristina",
@@ -27,6 +29,7 @@ async function seed() {
             commissionPercent: 0.4,
             thresholdForCommission: 0.0,
             taxRate: 0.23 * 0.5,
+            hireDate: new Date("1970-01-01"),
         },
         {
             name: "Pedro",
@@ -35,6 +38,7 @@ async function seed() {
             commissionPercent: 0.65,
             thresholdForCommission: 0.0,
             taxRate: 0.0,
+            hireDate: new Date("1970-01-01"),
         },
         {
             name: "Isabel",
@@ -43,6 +47,7 @@ async function seed() {
             commissionPercent: 0.8,
             thresholdForCommission: 0.0,
             taxRate: 0.23,
+            hireDate: new Date("1970-01-01"),
         },
         {
             name: "Sara",
@@ -51,6 +56,7 @@ async function seed() {
             commissionPercent: 0.8,
             thresholdForCommission: 0.0,
             taxRate: 0.23,
+            hireDate: new Date("1970-01-01"),
         }
     ]
 

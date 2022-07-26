@@ -40,10 +40,10 @@ export const useEvent = <T extends Function>(handler: T) => {
     }, []);
 }
 
-export type Employee = InferQueryOutput<"employee.getAll">[0]
+export type Employee = InferQueryOutput<"employee.byMonth">[0]
 
-export const useEmployees = (excludeOwner: boolean = false) => {
-    const employees = trpc.useQuery(["employee.getAll", { excludeOwner }])
+export const useEmployees = (year: number, month: number, excludeOwner: boolean = false) => {
+    const employees = trpc.useQuery(["employee.byMonth", { year, month, excludeOwner }])
     return employees
 }
 
@@ -100,11 +100,4 @@ export const useVacations = (year: number, month: number, employeeId?: Employee[
         }
     })
     return { ...vacations, mutate }
-}
-
-export type InventoryItem = InferQueryOutput<"inventory.getAll">["items"][0]
-
-export const useInventory = () => {
-    const inventory = trpc.useQuery(["inventory.getAll", {}])
-    return inventory
 }

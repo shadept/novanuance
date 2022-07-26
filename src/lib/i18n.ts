@@ -18,6 +18,7 @@ const resources: Resource = {
             "Employees": "Employees",
             "employee": {
                 "name": "Name",
+                "termination": "Last day",
                 "base_salary": "Base salary",
                 "billed_after_tax": "Billed (fax TAX)",
                 "commission": "Commission (Billed * {{commission}}%)",
@@ -56,6 +57,7 @@ const resources: Resource = {
             "Employees": "Empregados",
             "employee": {
                 "name": "Nome",
+                "termination": "Último dia",
                 "base_salary": "Salário base",
                 "billed_after_tax": "Faturado (após IVA)",
                 "commission": "Comissão (faturado * {{commission}}%)",

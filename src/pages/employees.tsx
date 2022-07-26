@@ -27,8 +27,8 @@ type EmployeeSummaryListProps = {
 
 const EmployeeSummaryList: React.FC<EmployeeSummaryListProps> = ({ year, month }) => {
     const { t } = useTranslation()
-    const employees = useEmployees()
     const holidays = useHolidays(year)
+    const employees = useEmployees(year, month)
 
     const [selectedEmployee, setSelectedEmployee] = useState<Employee | undefined>(undefined)
 
@@ -87,7 +87,7 @@ type EmployeeSalarySummaryProps = {
 }
 
 export const EmployeeSalarySummary: React.FC<EmployeeSalarySummaryProps> = ({ year, month, employee, holidays }) => {
-    const { t } = useTranslation()
+    const { t, i18n } = useTranslation()
     const receipts = useReceipts(year, month, employee.id)
     const vacations = useVacations(year, month, employee.id)
 
@@ -137,38 +137,46 @@ export const EmployeeSalarySummary: React.FC<EmployeeSalarySummaryProps> = ({ ye
     return (
         <div className="border-t border-gray-200">
             <EmployeeSummaryRecites year={year} month={month} employee={employee} receipts={receipts.data} />
-            <dl>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+            <dl className="stripped">
+                <div className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                     <dt className="text-sm font-medium text-gray-500">{t("employee.name")}</dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{employee.name}</dd>
                 </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                {
+                    employee.terminationDate && (
+                        <div className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt className="text-sm font-medium text-gray-500">{t("employee.termination")}</dt>
+                            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{employee.terminationDate.toLocaleDateString(i18n.language)}</dd>
+                        </div>
+                    )
+                }
+                <div className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                     <dt className="text-sm font-medium text-gray-500">{t("employee.base_salary")}</dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{round(salary.baseSalary, 2)}&nbsp;€</dd>
                 </div>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <div className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                     <dt className="text-sm font-medium text-gray-500">{t("employee.billed_after_tax")}</dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{round(salary.afterTaxes, 2)}&nbsp;€</dd>
                 </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <div className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                     <dt className="text-sm font-medium text-gray-500">{t("employee.commission", { commission: (salary.commissionPercent * 100).toFixed(0) })}</dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{round(salary.commission, 2)}&nbsp;€</dd>
                 </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <div className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                     <dt className="text-sm font-medium text-gray-500">{t("employee.meal_allowance", { workedDays: salary.workedDays })}</dt>
                     <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{round(salary.mealAllowance, 2)}&nbsp;€</dd>
                 </div>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <div className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                     <dt className="text-sm font-medium text-gray-500">{t("employee.total")}</dt>
                     <dd className={`mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2`}>
                         <span className={`${paycheckColor}`}>{round(salary.paycheck, 2)}&nbsp;€</span>
                     </dd>
                 </div>
-                <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <div className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                     <dt className="text-sm font-medium text-gray-500">{t("employee.bank_transfer")}</dt>
                     <dd className={`mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2`}>{round(salary.backTransfer, 2)}&nbsp;€</dd>
                 </div>
-                <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <div className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                     <dt className="text-sm font-medium text-gray-500">{t("employee.in_cash")}</dt>
                     <dd className={`mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2`}>{round(salary.inCash, 2)}&nbsp;€</dd>
                 </div>

@@ -25,8 +25,8 @@ type VacationsCalendarProps = {
 }
 
 export const VacationsCalendar: React.FC<VacationsCalendarProps> = ({ year, month }) => {
-    const employees = useEmployees(true)
     const holidays = useHolidays(year)
+    const employees = useEmployees(year, month, true)
     const vacations = useVacations(year, month)
 
     const start = useMemo(() => new Date(Date.UTC(year, month - 1)), [year, month])
@@ -117,9 +117,12 @@ const VacationCalendarRow: React.FC<VacationCalendarRowProps> = ({ start, index,
                     tdProps.className += " text-center font-medium text-gray-500"
                 } else {
                     tdProps.className = "border"
+                    const pastTerminationDate = e.terminationDate !== null ? e.terminationDate < current : false;
                     const vacationId = vacations.find(v => v.employeeId === e.id && isEqual(v.date, current))?.id
-                    const buttonStyle = classnames("w-8 h-8 mx-auto", { "bg-blue-500": vacationId !== undefined })
-                    tdProps.onClick = () => onVacationChange({ id: vacationId, employeeId: e.id, date: current })
+                    const buttonStyle = classnames("w-8 h-8 mx-auto", { "bg-blue-500": vacationId !== undefined, "bg-gray-100": pastTerminationDate })
+                    if (!pastTerminationDate) {
+                        tdProps.onClick = () => onVacationChange({ id: vacationId, employeeId: e.id, date: current })
+                    }
                     tdProps.children = <div className={buttonStyle} />
                 }
                 return (<td key={e.id} {...tdProps} />)
