@@ -35,7 +35,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         return Array.from(Array(12))
             .map((_, i) => formatter.format(new Date(year as number, i, 1)))
             .map((l, i) => ({ label: capitalize(l, router.locale || "en-EN"), value: i + 1 }))
-    }, [year, i18n.language, router.locale])
+    }, [year, router.locale])
 
     const setYear = (year: number) => router.push("/", { query: { year, month } })
     const setMonth = (month: number) => router.push("/", { query: { year, month } })

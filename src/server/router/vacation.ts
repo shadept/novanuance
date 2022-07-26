@@ -18,7 +18,10 @@ export const vacationRouter = createRouter()
                         lt: new Date(input.year, input.month, 1),
                     },
                     employee: {
-                        terminationDate: { gte: date }
+                        OR: [
+                            { terminationDate: { gte: date } },
+                            { terminationDate: null },
+                        ],
                     }
                 }
             });

@@ -12,7 +12,7 @@ export const useDebouncedEffect = (
     useEffect(() => {
         const handler = setTimeout(effect, delay);
         return () => clearTimeout(handler);
-    }, [...(deps || []), delay]);
+    }, [...(deps || []), delay]); // @eslint-disable-line react-hooks/exhaustive-deps
 }
 
 export const useDebouncedValue = <T>(value: T, delay: number) => {
