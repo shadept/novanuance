@@ -114,6 +114,7 @@ const ReceiptCalendarRow: React.FC<ReceiptCalendarRowProps> = ({ index, start, e
     }, [start, index])
 
     const tomorrow = new Date()
+    tomorrow.setHours(0, 0, 0, 0)
     tomorrow.setDate(tomorrow.getDate() + 1)
     const holiday = holidays.find(h => isEqual(h.date, current))
     const isWorkingDay = workdays.includes(current.getDay()) && holiday === undefined
@@ -144,8 +145,8 @@ const ReceiptCalendarRow: React.FC<ReceiptCalendarRowProps> = ({ index, start, e
                     const pastTerminationDate = e.terminationDate !== null ? e.terminationDate < current : false;
                     const vacation = vacations.find(v => v.employeeId === e.id && isEqual(v.date, current))
                     const receipt = receipts.find(r => r.employeeId === e.id && isEqual(r.date, current))
-                    const value = !pastTerminationDate && vacation === undefined ? receipt?.amount ?? 0 : undefined
-                    tdProps.children = <ReceiptInput key={`${e.id}-${date}`} employeeId={e.id} value={current < tomorrow ? value : undefined} onChange={handleChange} />
+                    const value = !pastTerminationDate && vacation === undefined && current < tomorrow ? receipt?.amount ?? 0 : undefined
+                    tdProps.children = <ReceiptInput key={`${e.id}-${date}`} employeeId={e.id} value={value} onChange={handleChange} />
                 }
                 return (<td key={e.id} {...tdProps} />)
             })}
