@@ -9,22 +9,25 @@ export const vacationRouter = createRouter()
             employeeId: z.string().nullish(),
         }),
         async resolve({ ctx, input }) {
-            const date = new Date(input.year, input.month - 1, 1);
-            return await ctx.prisma.vacation.findMany({
+            const vacations = await ctx.prisma.vacation.findMany({
                 where: {
                     employeeId: input.employeeId || undefined,
                     date: {
                         gte: new Date(input.year, input.month - 1, 1),
                         lt: new Date(input.year, input.month, 1),
                     },
+                },
+                include: {
                     employee: {
-                        OR: [
-                            { terminationDate: { gte: date } },
-                            { terminationDate: null },
-                        ],
+                        select: {
+                            terminationDate: true
+                        }
                     }
                 }
             });
+            return vacations
+                .filter(v => v.employee.terminationDate === null || v.employee.terminationDate > v.date)
+                .map(({ employee, ...v }) => v);
         },
     })
     .mutation("update", {
