@@ -1,6 +1,6 @@
+import type { DependencyList, EffectCallback } from "react"
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
-import type { DependencyList, EffectCallback, } from "react"
-import { InferQueryOutput, trpc } from "../utils/trpc"
+import { InferMutationInput, InferQueryOutput, trpc } from "../utils/trpc"
 import { SemiPartial } from "./types"
 
 
@@ -24,7 +24,7 @@ export const useDebouncedValue = <T>(value: T, delay: number) => {
     return debouncedValue
 }
 
-export const useEvent = <T extends Function>(handler: T) => {
+export const useEvent = <T extends Function>(handler: T): T => {
     const handlerRef = useRef(handler);
 
     // In a real implementation, this would run before layout effects
@@ -89,9 +89,9 @@ export type Vacation = InferQueryOutput<"vacation.byMonth">[0]
 export const useVacations = (year: number, month: number, employeeId?: Employee["id"]) => {
     const utils = trpc.useContext()
     const vacations = trpc.useQuery(["vacation.byMonth", { year, month, employeeId }])
-    const invalidateQuery = () => utils.invalidateQueries(["vacation.byMonth", { year, month, employeeId }])
-    const updateVacation = trpc.useMutation(["vacation.update"], { onSettled: invalidateQuery })
-    const deleteVacation = trpc.useMutation(["vacation.delete"], { onSettled: invalidateQuery })
+    const invalidate = () => utils.invalidateQueries(["vacation.byMonth", { year, month, employeeId }])
+    const updateVacation = trpc.useMutation(["vacation.update"], { onSettled: invalidate })
+    const deleteVacation = trpc.useMutation(["vacation.delete"], { onSettled: invalidate })
     const mutate = useEvent((vacation: SemiPartial<Vacation, "id">) => {
         if (vacation.id === undefined) {
             return updateVacation.mutateAsync(vacation)
@@ -99,5 +99,27 @@ export const useVacations = (year: number, month: number, employeeId?: Employee[
             return deleteVacation.mutateAsync({ id: vacation.id })
         }
     })
-    return { ...vacations, mutate }
+    return { ...vacations, mutate, invalidate }
+}
+
+export type InventoryItem = InferQueryOutput<"inventory.getAll">["items"][0]
+export type InventoryItemInput = InferMutationInput<"inventory.update">
+
+export const useInventory = (filter?: string, onSuccess?: (data: InferQueryOutput<"inventory.getAll">) => Promise<void>) => {
+    const utils = trpc.useContext()
+    const inventory = trpc.useQuery(["inventory.getAll", { filter }], { onSuccess })
+    const invalidate = () => utils.invalidateQueries(["inventory.getAll", { filter }])
+    const updateInventory = trpc.useMutation(["inventory.update"], { onSettled: invalidate })
+    const increaseInventoryStock = trpc.useMutation(["inventory.increaseStock"], { onSettled: invalidate })
+    const decreaseInventoryStock = trpc.useMutation(["inventory.decreaseStock"], { onSettled: invalidate })
+    const mutate = useEvent((item: InventoryItemInput) => {
+        return updateInventory.mutateAsync(item)
+    })
+    const increaseStock = useEvent((barcode: string) => {
+        return increaseInventoryStock.mutateAsync(barcode)
+    })
+    const decreaseStock = useEvent((barcode: string) => {
+        return decreaseInventoryStock.mutateAsync(barcode)
+    })
+    return { ...inventory, mutate, increaseStock, decreaseStock, invalidate }
 }

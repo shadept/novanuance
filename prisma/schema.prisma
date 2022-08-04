@@ -42,3 +42,31 @@ model Vacation {
 
     @@unique([employeeId, date])
 }
+
+model Warehouse {
+    id             String           @id @default(cuid())
+    name           String
+    address        String
+    stock InventoryStock[]
+}
+
+model InventoryItem {
+    id             String           @id @default(cuid())
+    barcode        String           @unique
+    brand          String
+    name           String
+    price          Decimal
+    imageUrl       String?
+    description    String?
+    stock InventoryStock[]
+}
+
+model InventoryStock {
+    warehouseId String
+    itemId      String
+    quantity    Int
+    warehouse   Warehouse     @relation(fields: [warehouseId], references: [id])
+    item        InventoryItem @relation(fields: [itemId], references: [id])
+
+    @@unique([warehouseId, itemId])
+}
