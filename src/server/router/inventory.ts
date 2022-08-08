@@ -1,6 +1,6 @@
-import { createRouter } from "./context";
-import { string, z } from "zod";
 import { InventoryItem } from "@prisma/client";
+import { z } from "zod";
+import { createRouter } from "./context";
 
 type Inventory = InventoryItem
 
@@ -20,7 +20,7 @@ export const inventoryRouter = createRouter()
     .query("getAll", {
         input: z.object({
             filter: z.string().nullish(),
-            limit: z.number().min(1).max(100).nullish(),
+            limit: z.number().min(1).max(25).nullish(),
             cursor: z.string().nullish(),
         }),
         async resolve({ ctx, input }) {

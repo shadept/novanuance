@@ -105,10 +105,10 @@ export const useVacations = (year: number, month: number, employeeId?: Employee[
 export type InventoryItem = InferQueryOutput<"inventory.getAll">["items"][0]
 export type InventoryItemInput = InferMutationInput<"inventory.update">
 
-export const useInventory = (filter?: string, onSuccess?: (data: InferQueryOutput<"inventory.getAll">) => Promise<void>) => {
+export const useInventory = (cursor: string | null, limit: number, filter?: string, onSuccess?: (data: InferQueryOutput<"inventory.getAll">) => Promise<void>) => {
     const utils = trpc.useContext()
-    const inventory = trpc.useQuery(["inventory.getAll", { filter }], { onSuccess })
-    const invalidate = () => utils.invalidateQueries(["inventory.getAll", { filter }])
+    const inventory = trpc.useQuery(["inventory.getAll", { filter, limit, cursor }], { onSuccess })
+    const invalidate = () => utils.invalidateQueries(["inventory.getAll", { filter, limit, cursor }])
     const updateInventory = trpc.useMutation(["inventory.update"], { onSettled: invalidate })
     const increaseInventoryStock = trpc.useMutation(["inventory.increaseStock"], { onSettled: invalidate })
     const decreaseInventoryStock = trpc.useMutation(["inventory.decreaseStock"], { onSettled: invalidate })

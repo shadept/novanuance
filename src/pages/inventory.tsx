@@ -1,9 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table"
+import { createColumnHelper, flexRender, getCoreRowModel, PaginationState, useReactTable } from "@tanstack/react-table"
 import classNames from "classnames"
-import { ButtonHTMLAttributes, DetailedHTMLProps, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react"
+import { ButtonHTMLAttributes, DetailedHTMLProps, useLayoutEffect, useMemo, useRef, useState } from "react"
 import CurrencyInput from 'react-currency-input-field'
-import { useForm, Controller } from "react-hook-form"
+import { Controller, useForm } from "react-hook-form"
 import * as z from 'zod'
 import { Toggle } from '../components/toggle'
 import { InventoryItem, InventoryItemInput, useDebouncedEffect, useEvent, useInventory } from "../lib/hooks"
@@ -54,13 +54,19 @@ const Inventory: React.FC<InventoryProps> = () => {
     const inputRef = useRef<HTMLInputElement>(null)
     useLayoutEffect(() => inputRef.current?.focus(), [])
 
+    const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 5 })
+    const cursorByPage = useRef<Map<number, string | null>>(new Map())
+
     const pendingActions = useRef<Array<(newData: Exclude<typeof data, undefined>) => Promise<void>>>([])
-    const { data, mutate, increaseStock, decreaseStock, invalidate } = useInventory(filter, async (newData) => {
-        if (pendingActions.current === undefined) return
-        if (filter === undefined) return
-        await Promise.allSettled(pendingActions.current.map(a => a(newData)))
-        pendingActions.current.splice(0, pendingActions.current.length)
-    })
+    const { data, mutate, increaseStock, decreaseStock, invalidate } = useInventory(
+        cursorByPage.current.get(pagination.pageIndex) ?? null, pagination.pageSize, filter,
+        async (newData) => {
+            cursorByPage.current.set(pagination.pageIndex + 1, newData.nextCursor)
+            // do not allow pending actions when filter is not set
+            if (filter === undefined && pendingActions.current === undefined) return
+            await Promise.allSettled(pendingActions.current.map(a => a(newData)))
+            pendingActions.current.splice(0, pendingActions.current.length)
+        })
 
     const canCreate = searchTerm.match(/^(\d{8}|\d{12}|\d{13}|\d{14})$/) && data?.items.length === 0
     const handleInputKeyDown = useEvent((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -108,10 +114,15 @@ const Inventory: React.FC<InventoryProps> = () => {
         inputRef.current?.focus()
     })
 
+    const foundLastPage = cursorByPage.current.get(cursorByPage.current.size) === null
     const table = useReactTable({
         data: data?.items ?? [],
         columns: InventoryColumns,
+        pageCount: foundLastPage ? cursorByPage.current.size : -1,
+        state: { pagination },
+        onPaginationChange: setPagination,
         getCoreRowModel: getCoreRowModel(),
+        manualPagination: true,
     })
 
     return (
@@ -155,16 +166,16 @@ const Inventory: React.FC<InventoryProps> = () => {
                 <div className="py-3 flex items-center justify-between">
                     <div className="flex-1 flex items-center justify-between">
                         <span className="text-sm text-gray-700">
-                            Page <span className="font-medium">{1}</span> of{" "}
-                            <span className="font-medium">{table.getPageCount()}</span>
+                            Page <span className="font-medium">{pagination.pageIndex + 1}</span> of{" "}
+                            <span className="font-medium">{!foundLastPage ? "Many" : table.getPageCount()}</span>
                         </span>
                     </div>
                     <div>
                         <nav className="relative z-0 inline-flex rounded-sm shadow-sm -space-x-px">
-                            <Button className="rounded-l-md" disabled={!table.getCanPreviousPage()}>First</Button>
-                            <Button disabled={!table.getCanPreviousPage()}>Previous</Button>
-                            <Button disabled={!table.getCanNextPage()}>Next</Button>
-                            <Button className="rounded-r-md" disabled={!table.getCanNextPage()}>Last</Button>
+                            <Button className="rounded-l-md" disabled={!table.getCanPreviousPage()} onClick={() => setPagination({ ...pagination, pageIndex: 0 })}>First</Button>
+                            <Button disabled={!table.getCanPreviousPage()} onClick={() => setPagination({ ...pagination, pageIndex: pagination.pageIndex - 1 })}>Previous</Button>
+                            <Button disabled={!table.getCanNextPage()} onClick={() => setPagination({ ...pagination, pageIndex: pagination.pageIndex + 1 })}>Next</Button>
+                            <Button className="rounded-r-md" disabled={!table.getCanNextPage() || !foundLastPage} onClick={() => setPagination({ ...pagination, pageIndex: cursorByPage.current.size - 1 })}>Last</Button>
                         </nav>
                     </div>
                 </div>
