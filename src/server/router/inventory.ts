@@ -26,6 +26,7 @@ export const inventoryRouter = createRouter()
         async resolve({ ctx, input }) {
             const limit = input.limit ?? 50;
             const { cursor } = input
+            const itemCount = await ctx.prisma.inventoryItem.count()
             const items = await ctx.prisma.inventoryItem.findMany({
                 where: {
                     OR: input.filter ? [
@@ -51,7 +52,7 @@ export const inventoryRouter = createRouter()
                 nextCursor = nextItem.id
             }
 
-            return { items: items.map(toDto), nextCursor }
+            return { items: items.map(toDto), nextCursor, pages: Math.ceil(itemCount / limit) }
         },
     })
     .query("byBarcode", {

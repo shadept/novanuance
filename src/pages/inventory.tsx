@@ -4,6 +4,7 @@ import classNames from "classnames"
 import { ButtonHTMLAttributes, DetailedHTMLProps, useLayoutEffect, useMemo, useRef, useState } from "react"
 import CurrencyInput from 'react-currency-input-field'
 import { Controller, useForm } from "react-hook-form"
+import { Trans, useTranslation } from 'react-i18next'
 import * as z from 'zod'
 import { Toggle } from '../components/toggle'
 import { InventoryItem, InventoryItemInput, useDebouncedEffect, useEvent, useInventory } from "../lib/hooks"
@@ -15,6 +16,7 @@ type InventoryProps = {
 }
 
 const Inventory: React.FC<InventoryProps> = () => {
+    const { t } = useTranslation()
     const [filter, setFilter] = useState<string>()
     const [searchTerm, setSearchTerm] = useState("")
 
@@ -26,19 +28,19 @@ const Inventory: React.FC<InventoryProps> = () => {
     const [selectedItem, setSelectedItem] = useState<ModalInventoryItem>()
     const InventoryColumns = useMemo(() => [
         columnHelper.accessor("name", {
-            header: () => "Name",
+            header: () => t("inventory.name"),
             cell: info => info.renderValue(),
         }),
         columnHelper.accessor("brand", {
-            header: () => "Brand",
+            header: () => t("inventory.brand"),
             cell: info => info.renderValue(),
         }),
         columnHelper.accessor("quantity", {
-            header: () => "In Stock",
+            header: () => t("inventory.in_stock"),
             cell: info => info.renderValue(),
         }),
         columnHelper.accessor("price", {
-            header: () => "Price",
+            header: () => t("inventory.price"),
             cell: info => {
                 const value = info.renderValue()
                 if (value === null) return null
@@ -46,15 +48,15 @@ const Inventory: React.FC<InventoryProps> = () => {
             },
         }),
         columnHelper.display({
-            header: "Actions",
-            cell: info => <RowActions item={info.row.original} onEdit={setSelectedItem} />,
+            header: t("inventory.actions") as string,
+            cell: info => <RowActions item={info.row.original} onEdit={setSelectedItem} onRemove={() => { }} />,
         })
     ], [])
 
     const inputRef = useRef<HTMLInputElement>(null)
     useLayoutEffect(() => inputRef.current?.focus(), [])
 
-    const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 5 })
+    const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
     const cursorByPage = useRef<Map<number, string | null>>(new Map())
 
     const pendingActions = useRef<Array<(newData: Exclude<typeof data, undefined>) => Promise<void>>>([])
@@ -114,11 +116,10 @@ const Inventory: React.FC<InventoryProps> = () => {
         inputRef.current?.focus()
     })
 
-    const foundLastPage = cursorByPage.current.get(cursorByPage.current.size) === null
     const table = useReactTable({
         data: data?.items ?? [],
         columns: InventoryColumns,
-        pageCount: foundLastPage ? cursorByPage.current.size : -1,
+        pageCount: data?.pages || -1,
         state: { pagination },
         onPaginationChange: setPagination,
         getCoreRowModel: getCoreRowModel(),
@@ -129,13 +130,13 @@ const Inventory: React.FC<InventoryProps> = () => {
         <>
             <div>
                 <div className="mb-4">
-                    <input ref={inputRef} className="border rounded w-full py-2 px-3 text-gray-700" placeholder="Barcode"
+                    <input ref={inputRef} className="border rounded w-full py-2 px-3 text-gray-700" placeholder={t("inventory.search_placeholder")}
                         onChange={handleChange} onKeyDown={handleInputKeyDown} value={searchTerm} />
                 </div>
                 <div className="mb-4 flex items-center gap-4">
-                    <Button disabled={!canCreate} onClick={() => setSelectedItem(makeInventoryItem(searchTerm))}>Create</Button>
-                    <Toggle label="Increase stock" checked={stockMode === "increase"} onChange={handleIncreaseToggle} />
-                    <Toggle label="Decrease stock" checked={stockMode === "decrease"} onChange={handleDecreaseToggle} />
+                    <Button disabled={!canCreate} onClick={() => setSelectedItem(makeInventoryItem(searchTerm))}>{t("inventory.create")}</Button>
+                    <Toggle label={t("inventory.increase_stock")} checked={stockMode === "increase"} onChange={handleIncreaseToggle} />
+                    <Toggle label={t("inventory.decrease_stock")} checked={stockMode === "decrease"} onChange={handleDecreaseToggle} />
                 </div>
                 <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
                     <table className="min-w-full divide-y divide-gray-200">
@@ -166,16 +167,15 @@ const Inventory: React.FC<InventoryProps> = () => {
                 <div className="py-3 flex items-center justify-between">
                     <div className="flex-1 flex items-center justify-between">
                         <span className="text-sm text-gray-700">
-                            Page <span className="font-medium">{pagination.pageIndex + 1}</span> of{" "}
-                            <span className="font-medium">{!foundLastPage ? "Many" : table.getPageCount()}</span>
+                            <Trans t={t} i18nKey={"inventory.paging"} values={{ index: pagination.pageIndex + 1, of: table.getPageCount() || t("inventory.many") }} components={{ b: <span className="font-medium" /> }} />
                         </span>
                     </div>
                     <div>
                         <nav className="relative z-0 inline-flex rounded-sm shadow-sm -space-x-px">
-                            <Button className="rounded-l-md" disabled={!table.getCanPreviousPage()} onClick={() => setPagination({ ...pagination, pageIndex: 0 })}>First</Button>
-                            <Button disabled={!table.getCanPreviousPage()} onClick={() => setPagination({ ...pagination, pageIndex: pagination.pageIndex - 1 })}>Previous</Button>
-                            <Button disabled={!table.getCanNextPage()} onClick={() => setPagination({ ...pagination, pageIndex: pagination.pageIndex + 1 })}>Next</Button>
-                            <Button className="rounded-r-md" disabled={!table.getCanNextPage() || !foundLastPage} onClick={() => setPagination({ ...pagination, pageIndex: cursorByPage.current.size - 1 })}>Last</Button>
+                            <Button className="rounded-l-md" disabled={!table.getCanPreviousPage()} onClick={() => setPagination({ ...pagination, pageIndex: 0 })}>{t("inventory.first")}</Button>
+                            <Button disabled={!table.getCanPreviousPage()} onClick={() => setPagination({ ...pagination, pageIndex: pagination.pageIndex - 1 })}>{t("inventory.previous")}</Button>
+                            <Button disabled={!table.getCanNextPage()} onClick={() => setPagination({ ...pagination, pageIndex: pagination.pageIndex + 1 })}>{t("inventory.next")}</Button>
+                            <Button className="rounded-r-md" disabled={!table.getCanNextPage() || data?.pages === undefined} onClick={() => setPagination({ ...pagination, pageIndex: data!.pages - 1 })}>{t("inventory.last")}</Button>
                         </nav>
                     </div>
                 </div>
@@ -185,11 +185,19 @@ const Inventory: React.FC<InventoryProps> = () => {
     )
 }
 
-const RowActions: React.FC<{ item: InventoryItem, onEdit: (item: InventoryItem) => void }> = ({ item, onEdit }) => {
+type RowActionsProps = {
+    item: InventoryItem
+    onEdit: (item: InventoryItem) => void
+    onRemove: (item: InventoryItem) => void
+}
+
+const RowActions: React.FC<RowActionsProps> = ({ item, onEdit, onRemove }) => {
+    const { t } = useTranslation()
+
     return (
         <div className="flex items-center gap-2">
-            <Button title="Edit" onClick={() => onEdit(item)}><i className="fa-solid fa-pencil"></i></Button>
-            <Button title="Remove" onClick={() => onEdit(item)}><i className="fa-solid fa-trash-can"></i></Button>
+            <Button title={t("inventory.edit")} onClick={() => onEdit(item)}><i className="fa-solid fa-pencil"></i></Button>
+            <Button title={t("inventory.remove")} onClick={() => onRemove(item)}><i className="fa-solid fa-trash-can"></i></Button>
         </div>
     )
 }
@@ -226,6 +234,7 @@ type InventorItemModalProps = {
 }
 
 const InventoryItemModal: React.FC<InventorItemModalProps> = ({ item, onSave, onClose }) => {
+    const { t } = useTranslation()
     type InventoryItemFormState = Omit<InventoryItem, 'price'> & { price: string }
     const { register, control, handleSubmit, formState: { errors } } = useForm<InventoryItemFormState>({
         defaultValues: { ...item, price: item.price.toFixed(2) },
@@ -240,24 +249,24 @@ const InventoryItemModal: React.FC<InventorItemModalProps> = ({ item, onSave, on
     })
 
     return (
-        <Modal title={isCreating ? "Creating" : "Editing"} onClose={onClose}>
+        <Modal title={isCreating ? t("inventory.creating") : t("inventory.editing")} onClose={onClose}>
             <form onSubmit={handleSubmit(handleSave)}>
                 <div className="grid grid-cols-3 gap-4" >
                     <div className="row-span-2">
-                        <img className="m-auto h-40" alt="Image" src={item.imageUrl} />
+                        <img className="m-auto h-40" alt="" src={item.imageUrl} />
                     </div>
                     <div>
-                        <label className="ml-2">Brand:</label>
+                        <label className="ml-2">{t("inventory.brand")}:</label>
                         <input className="border rounded w-full py-2 px-3 text-gray-700" {...register("brand")} />
                         {errors.brand?.message && <p className="text-red-500">{errors.brand?.message}</p>}
                     </div>
                     <div>
-                        <label className="ml-2">Name:</label>
+                        <label className="ml-2">{t("inventory.name")}:</label>
                         <input className="border rounded w-full py-2 px-3 text-gray-700" {...register("name")} />
                         {errors.name?.message && <p className="text-red-500">{errors.name?.message}</p>}
                     </div>
                     <div>
-                        <label className="ml-2">Price:</label>
+                        <label className="ml-2">{t("inventory.price")}:</label>
                         <Controller name="price" control={control}
                             render={({ field: { onChange, value } }) => (
                                 <CurrencyInput className="border rounded w-full py-2 px-3 text-gray-700"
@@ -268,24 +277,24 @@ const InventoryItemModal: React.FC<InventorItemModalProps> = ({ item, onSave, on
                         {errors.price?.message && <p className="text-red-500">{errors.price?.message}</p>}
                     </div>
                     <div>
-                        <label className="ml-2">Quantity:</label>
+                        <label className="ml-2">{t("inventory.in_stock")}:</label>
                         <input className="border rounded w-full py-2 px-3 text-gray-700" {...register("quantity", { valueAsNumber: true })} />
                         {errors.quantity?.message && <p className="text-red-500">{errors.quantity?.message}</p>}
                     </div>
                     <div>
-                        <label className="ml-2">Barcode:</label>
+                        <label className="ml-2">{t("inventory.barcode")}:</label>
                         <input className="border rounded w-full py-2 px-3 text-gray-700" disabled {...register("barcode")} />
                         {errors.barcode?.message && <p className="text-red-500">{errors.barcode?.message}</p>}
                     </div>
                     <div className="col-span-2">
-                        <label className="ml-2">Description:</label>
+                        <label className="ml-2">{t("inventory.description")}:</label>
                         <textarea className="border rounded w-full py-2 px-3 text-gray-700" {...register("description")} rows={3} />
                         {errors.description?.message && <p className="text-red-500">{errors.description?.message}</p>}
                     </div>
                 </div>
                 <hr className="my-3" />
                 <div className="flex justify-end">
-                    <Button type="submit" className="rounded bg-green-500 border-green-500 text-white hover:bg-green-700">{isCreating ? "Create" : "Save"}</Button>
+                    <Button type="submit" className="rounded bg-green-500 border-green-500 text-white hover:bg-green-700">{isCreating ? t("inventory.create") : t("inventory.save")}</Button>
                 </div>
             </form>
         </Modal>
