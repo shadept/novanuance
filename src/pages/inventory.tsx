@@ -65,9 +65,10 @@ const Inventory: React.FC<InventoryProps> = () => {
         async (newData) => {
             cursorByPage.current.set(pagination.pageIndex + 1, newData.nextCursor)
             // do not allow pending actions when filter is not set
-            if (filter === undefined && pendingActions.current === undefined) return
-            await Promise.allSettled(pendingActions.current.map(a => a(newData)))
-            pendingActions.current.splice(0, pendingActions.current.length)
+            if (filter === undefined || pendingActions.current.length === 0) return
+            console.log(`Resolving ${pendingActions.current.length} pending actions`)
+            const actions = pendingActions.current.splice(0)
+            await Promise.allSettled(actions.map(a => a(newData)))
         })
 
     const canCreate = searchTerm.match(/^(\d{8}|\d{12}|\d{13}|\d{14})$/) && data?.items.length === 0
@@ -78,10 +79,12 @@ const Inventory: React.FC<InventoryProps> = () => {
                 console.log("Setting pending barcode action", term)
                 pendingActions.current.push(async (newData) => {
                     if (newData.items.length === 0) {
-                        setSelectedItem(makeInventoryItem(term))
+                        setSelectedItem(makeInventoryItem(term, stockMode === "increase" ? 1 : 0))
                     } else if (stockMode === "increase") {
+                        console.log("Increasing stock")
                         await increaseStock(term)
-                    } else if (stockMode === "decrease") {
+                    } else if (stockMode === "decrease" && newData.items[0]!.quantity > 0) {
+                        console.log("Decreasing stock")
                         await decreaseStock(term)
                     }
                 })
@@ -97,7 +100,7 @@ const Inventory: React.FC<InventoryProps> = () => {
     })
 
     const handleDecreaseToggle = useEvent(() => {
-        () => setStockMode(stockMode === "decrease" ? "none" : "decrease")
+        setStockMode(stockMode === "decrease" ? "none" : "decrease")
         inputRef.current?.select()
     })
 
@@ -119,7 +122,7 @@ const Inventory: React.FC<InventoryProps> = () => {
     const table = useReactTable({
         data: data?.items ?? [],
         columns: InventoryColumns,
-        pageCount: data?.pages || -1,
+        pageCount: data?.pages || 0,
         state: { pagination },
         onPaginationChange: setPagination,
         getCoreRowModel: getCoreRowModel(),
@@ -134,7 +137,7 @@ const Inventory: React.FC<InventoryProps> = () => {
                         onChange={handleChange} onKeyDown={handleInputKeyDown} value={searchTerm} />
                 </div>
                 <div className="mb-4 flex items-center gap-4">
-                    <Button disabled={!canCreate} onClick={() => setSelectedItem(makeInventoryItem(searchTerm))}>{t("inventory.create")}</Button>
+                    <Button disabled={!canCreate} onClick={() => setSelectedItem(makeInventoryItem(searchTerm, stockMode === "increase" ? 1 : 0))}>{t("inventory.create")}</Button>
                     <Toggle label={t("inventory.increase_stock")} checked={stockMode === "increase"} onChange={handleIncreaseToggle} />
                     <Toggle label={t("inventory.decrease_stock")} checked={stockMode === "decrease"} onChange={handleDecreaseToggle} />
                 </div>
@@ -163,11 +166,19 @@ const Inventory: React.FC<InventoryProps> = () => {
                             ))}
                         </tbody>
                     </table>
+                    {table.getRowModel().rows.length === 0 &&
+                        <div className="m-auto p-8 text-center font">
+                            No items found
+                        </div>
+                    }
                 </div>
                 <div className="py-3 flex items-center justify-between">
                     <div className="flex-1 flex items-center justify-between">
                         <span className="text-sm text-gray-700">
-                            <Trans t={t} i18nKey={"inventory.paging"} values={{ index: pagination.pageIndex + 1, of: table.getPageCount() || t("inventory.many") }} components={{ b: <span className="font-medium" /> }} />
+                            <Trans t={t} i18nKey={"inventory.paging"}
+                                components={{ b: <span className="font-medium" /> }}
+                                values={{ index: pagination.pageIndex + 1, of: table.getPageCount() ?? t("inventory.many") }}
+                            />
                         </span>
                     </div>
                     <div>
@@ -202,11 +213,11 @@ const RowActions: React.FC<RowActionsProps> = ({ item, onEdit, onRemove }) => {
     )
 }
 
-function makeInventoryItem(barcode?: string): ModalInventoryItem {
+function makeInventoryItem(barcode?: string, initialStock: number = 0): ModalInventoryItem {
     return {
         brand: "",
         name: "",
-        quantity: 0,
+        quantity: initialStock,
         price: 0,
         barcode: barcode ?? "",
         imageUrl: undefined,
@@ -294,7 +305,9 @@ const InventoryItemModal: React.FC<InventorItemModalProps> = ({ item, onSave, on
                 </div>
                 <hr className="my-3" />
                 <div className="flex justify-end">
-                    <Button type="submit" className="rounded bg-green-500 border-green-500 text-white hover:bg-green-700">{isCreating ? t("inventory.create") : t("inventory.save")}</Button>
+                    <Button type="submit" className="rounded bg-green-500 border-green-500 text-white hover:bg-green-700">
+                        {isCreating ? t("inventory.create") : t("inventory.save")}
+                    </Button>
                 </div>
             </form>
         </Modal>

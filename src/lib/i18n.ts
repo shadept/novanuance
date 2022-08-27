@@ -61,7 +61,7 @@ const resources: Resource = {
                 "previous": "Previous",
                 "price": "Price",
                 "remove": "Remove",
-                "save ": "Save",
+                "save": "Save",
                 "search_placeholder": "Barcode or product name",
             }
         }
@@ -125,7 +125,7 @@ const resources: Resource = {
                 "previous": "Anterior",
                 "price": "Preço",
                 "remove": "Remover",
-                "save ": "Gravar",
+                "save": "Gravar",
                 "search_placeholder": "Código de barras ou nome do producto",
             }
         }

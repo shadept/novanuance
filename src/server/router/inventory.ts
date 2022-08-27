@@ -1,4 +1,4 @@
-import { InventoryItem } from "@prisma/client";
+import { InventoryItem, Prisma } from "@prisma/client";
 import { z } from "zod";
 import { createRouter } from "./context";
 
@@ -26,15 +26,16 @@ export const inventoryRouter = createRouter()
         async resolve({ ctx, input }) {
             const limit = input.limit ?? 50;
             const { cursor } = input
-            const itemCount = await ctx.prisma.inventoryItem.count()
+            const whereFilter: Prisma.InventoryItemWhereInput = {
+                OR: input.filter ? [
+                    { name: { contains: input.filter, mode: "insensitive" } },
+                    { brand: { contains: input.filter, mode: "insensitive" } },
+                    { barcode: { startsWith: input.filter } },
+                ] : undefined,
+            }
+            const itemCount = await ctx.prisma.inventoryItem.count({ where: whereFilter })
             const items = await ctx.prisma.inventoryItem.findMany({
-                where: {
-                    OR: input.filter ? [
-                        { name: { contains: input.filter, mode: "insensitive" } },
-                        { brand: { contains: input.filter, mode: "insensitive" } },
-                        { barcode: { startsWith: input.filter } },
-                    ] : undefined,
-                },
+                where: whereFilter,
                 take: limit + 1,
                 cursor: cursor ? { id: cursor } : undefined,
                 orderBy: {
