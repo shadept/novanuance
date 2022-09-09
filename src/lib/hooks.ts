@@ -40,6 +40,20 @@ export const useEvent = <T extends Function>(handler: T): T => {
     }, []);
 }
 
+const useEventOncePerUpdate = <T extends Function>(handler: T): T => {
+    const ref = useRef<boolean>(true)
+    useEffect(() => {
+        ref.current = true
+    })
+    // @ts-ignore
+    return useEvent((...args) => {
+        if (ref.current) {
+            ref.current = false;
+            handler(...args)
+        }
+    })
+}
+
 export type Employee = InferQueryOutput<"employee.byMonth">[0]
 
 export const useEmployees = (year: number, month: number, excludeOwner: boolean = false) => {

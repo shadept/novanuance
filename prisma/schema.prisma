@@ -44,21 +44,23 @@ model Vacation {
 }
 
 model Warehouse {
-    id             String           @id @default(cuid())
-    name           String
-    address        String
-    stock InventoryStock[]
+    id                    String                  @id @default(cuid())
+    name                  String
+    address               String
+    stock                 InventoryStock[]
+    InventoryStockHistory InventoryStockHistory[]
 }
 
 model InventoryItem {
-    id             String           @id @default(cuid())
-    barcode        String           @unique
-    brand          String
-    name           String
-    price          Decimal
-    imageUrl       String?
-    description    String?
-    stock InventoryStock[]
+    id           String                  @id @default(cuid())
+    barcode      String                  @unique
+    brand        String
+    name         String
+    price        Decimal
+    imageUrl     String?
+    description  String?
+    stock        InventoryStock[]
+    stockHistory InventoryStockHistory[]
 }
 
 model InventoryStock {
@@ -69,4 +71,15 @@ model InventoryStock {
     item        InventoryItem @relation(fields: [itemId], references: [id])
 
     @@unique([warehouseId, itemId])
+}
+
+model InventoryStockHistory {
+    warehouseId String
+    itemId      String
+    quantity    Int
+    date        DateTime
+    warehouse   Warehouse     @relation(fields: [warehouseId], references: [id])
+    item        InventoryItem @relation(fields: [itemId], references: [id])
+
+    @@unique([warehouseId, itemId, date])
 }

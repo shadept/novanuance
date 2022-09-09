@@ -1,4 +1,4 @@
-import { InventoryItem, Prisma } from "@prisma/client";
+import { InventoryItem, InventoryStockHistory, Prisma, PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { createRouter } from "./context";
 
@@ -15,6 +15,28 @@ const toDto = (item: InventoryItem & { stock: { quantity: number; }[] }) => ({
     description: item.description ?? undefined,
 })
 
+const updateStockHistory = async (prisma: PrismaClient, warehouseId: string, itemId: string, quantity: number, date?: Date): Promise<InventoryStockHistory> => {
+    const today = (date ?? new Date())
+    today.setUTCHours(0, 0, 0, 0)
+    return await prisma.inventoryStockHistory.upsert({
+        where: {
+            warehouseId_itemId_date: {
+                warehouseId: warehouseId,
+                itemId: itemId,
+                date: today
+            }
+        },
+        create: {
+            warehouseId: warehouseId,
+            itemId: itemId,
+            date: today,
+            quantity: quantity
+        },
+        update: {
+            quantity: quantity
+        }
+    })
+}
 
 export const inventoryRouter = createRouter()
     .query("getAll", {
@@ -102,7 +124,17 @@ export const inventoryRouter = createRouter()
                 barcode: input.barcode,
                 description: input.description,
             }
-            return await ctx.prisma.inventoryItem.upsert({
+
+            const oldStock = await ctx.prisma.inventoryStock.findUnique({
+                where: {
+                    warehouseId_itemId: {
+                        warehouseId: warehouse.id,
+                        itemId: input.id || "",
+                    }
+                }
+            })
+
+            const item = await ctx.prisma.inventoryItem.upsert({
                 where: {
                     id: input.id || "",
                 },
@@ -135,7 +167,16 @@ export const inventoryRouter = createRouter()
                         }]
                     }
                 },
+                include: {
+                    stock: true
+                }
             });
+
+            if (oldStock?.quantity !== input.quantity) {
+                updateStockHistory(ctx.prisma, warehouse.id, item.id, input.quantity)
+            }
+
+            return toDto(item)
         }
     })
     .mutation("increaseStock", {
@@ -153,7 +194,7 @@ export const inventoryRouter = createRouter()
                 return ctx.res.status(404)
             }
 
-            await ctx.prisma.inventoryStock.update({
+            const stock = await ctx.prisma.inventoryStock.update({
                 where: {
                     warehouseId_itemId: {
                         warehouseId: warehouse.id,
@@ -164,6 +205,8 @@ export const inventoryRouter = createRouter()
                     quantity: { increment: 1 }
                 }
             })
+
+            updateStockHistory(ctx.prisma, warehouse.id, item.id, stock.quantity)
         }
     })
     .mutation("decreaseStock", {
@@ -181,7 +224,7 @@ export const inventoryRouter = createRouter()
                 return ctx.res.status(404)
             }
 
-            await ctx.prisma.inventoryStock.update({
+            const stock = await ctx.prisma.inventoryStock.update({
                 where: {
                     warehouseId_itemId: {
                         warehouseId: warehouse.id,
@@ -192,6 +235,8 @@ export const inventoryRouter = createRouter()
                     quantity: { decrement: 1 }
                 }
             })
+
+            updateStockHistory(ctx.prisma, warehouse.id, item.id, stock.quantity)
         }
     })
     // .mutation("delete", {

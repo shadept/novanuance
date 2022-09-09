@@ -141,6 +141,16 @@ async function seedInventoryManagement() {
             quantity: 5
         }))
     })
+    const today = new Date()
+    today.setUTCHours(0, 0, 0, 0)
+    const history = await prisma.inventoryStockHistory.createMany({
+        data: inventory.map(i => ({
+            warehouseId: warehouse.id,
+            itemId: i.id,
+            date: today,
+            quantity: 5
+        }))
+    })
 }
 
 async function seed() {
