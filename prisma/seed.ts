@@ -5,7 +5,7 @@ const prisma = new PrismaClient()
 
 async function seedEmployeeManagement() {
     if (await prisma.employee.count() !== 0) return
-    const employees = await prisma.employee.createMany({
+    await prisma.employee.createMany({
         data: [
             {
                 name: "Casa",

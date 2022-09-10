@@ -124,10 +124,14 @@ export const useInventory = (cursor: string | null, limit: number, filter?: stri
     const inventory = trpc.useQuery(["inventory.getAll", { filter, limit, cursor }], { onSuccess })
     const invalidate = () => utils.invalidateQueries(["inventory.getAll", { filter, limit, cursor }])
     const updateInventory = trpc.useMutation(["inventory.update"], { onSettled: invalidate })
+    const deleteInventory = trpc.useMutation(["inventory.delete"], { onSettled: invalidate })
     const increaseInventoryStock = trpc.useMutation(["inventory.increaseStock"], { onSettled: invalidate })
     const decreaseInventoryStock = trpc.useMutation(["inventory.decreaseStock"], { onSettled: invalidate })
     const mutate = useEvent((item: InventoryItemInput) => {
         return updateInventory.mutateAsync(item)
+    })
+    const remove = useEvent((item: InventoryItem) => {
+        return deleteInventory.mutateAsync({ id: item.id })
     })
     const increaseStock = useEvent((barcode: string) => {
         return increaseInventoryStock.mutateAsync(barcode)
@@ -135,7 +139,7 @@ export const useInventory = (cursor: string | null, limit: number, filter?: stri
     const decreaseStock = useEvent((barcode: string) => {
         return decreaseInventoryStock.mutateAsync(barcode)
     })
-    return { ...inventory, mutate, increaseStock, decreaseStock, invalidate }
+    return { ...inventory, mutate, remove, increaseStock, decreaseStock, invalidate }
 }
 
 export const useInventoryStockHistory = (itemId: string, daysBefore: number) => {

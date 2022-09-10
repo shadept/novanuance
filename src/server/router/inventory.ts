@@ -271,16 +271,16 @@ export const inventoryRouter = createRouter()
             updateStockHistory(ctx.prisma, warehouse.id, item.id, stock.quantity)
         }
     })
-    // .mutation("delete", {
-    //     input: z.object({
-    //         id: z.string(),
-    //     }),
-    //     async resolve({ ctx, input }) {
-    //         return await ctx.prisma.vacation.delete({
-    //             where: {
-    //                 id: input.id,
-    //             },
-    //         });
-    //     }
-    // })
+    .mutation("delete", {
+        input: z.object({
+            id: z.string(),
+        }),
+        async resolve({ ctx, input }) {
+            await ctx.prisma.$transaction([
+                ctx.prisma.inventoryStockHistory.deleteMany({ where: { itemId: input.id } }),
+                ctx.prisma.inventoryStock.deleteMany({ where: { itemId: input.id } }),
+                ctx.prisma.inventoryItem.delete({ where: { id: input.id } }),
+            ])
+        }
+    })
     ;
