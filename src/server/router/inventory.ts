@@ -78,6 +78,38 @@ export const inventoryRouter = createRouter()
             return { items: items.map(toDto), nextCursor, pages: Math.ceil(itemCount / limit) }
         },
     })
+    .query("getStockHistory", {
+        input: z.object({
+            itemId: z.string(),
+            start: z.date()
+        }),
+        async resolve({ ctx, input }) {
+            const warehouse = await ctx.prisma.warehouse.findFirst()
+            if (warehouse === null) {
+                console.error("Missing warehouse")
+                return []
+            }
+
+            const history = await ctx.prisma.inventoryStockHistory.findMany({
+                where: {
+                    warehouseId: warehouse.id,
+                    itemId: input.itemId,
+                    date: { gte: input.start }
+                }
+            })
+
+            const today = new Date()
+            today.setUTCHours(0, 0, 0, 0)
+            if (history.length > 0 && history[history.length - 1]!.date !== today) {
+                history.push({
+                    ...history[history.length - 1]!,
+                    date: today
+                })
+            }
+
+            return history
+        }
+    })
     .query("byBarcode", {
         input: z.string(),
         async resolve({ ctx, input }) {

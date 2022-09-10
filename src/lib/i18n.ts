@@ -46,11 +46,13 @@ const resources: Resource = {
                 "brand": "Brand",
                 "create": "Create",
                 "creating": "Creation",
+                "days": "Days",
                 "description": "Description",
                 "decrease_stock": "Decrease Stock",
                 "edit": "Edit",
                 "editing": "Editing",
                 "first": "First",
+                "history": "History",
                 "in_stock": "In Stock",
                 "increase_stock": "Increase Stock",
                 "last": "Last",
@@ -63,6 +65,7 @@ const resources: Resource = {
                 "remove": "Remove",
                 "save": "Save",
                 "search_placeholder": "Barcode or product name",
+                "totalPrice": "Total Price",
             }
         }
     },
@@ -110,11 +113,13 @@ const resources: Resource = {
                 "brand": "Marca",
                 "create": "Criar",
                 "creating": "Criando",
+                "days": "Dias",
                 "decrease_stock": "Diminuir stock",
                 "description": "Descrição",
                 "edit": "Editar",
                 "editing": "Editando",
                 "first": "Primeira",
+                "history": "Histórico",
                 "in_stock": "Em stock",
                 "increase_stock": "Aumentar stock",
                 "last": "Última",
@@ -127,6 +132,7 @@ const resources: Resource = {
                 "remove": "Remover",
                 "save": "Gravar",
                 "search_placeholder": "Código de barras ou nome do producto",
+                "totalPrice": "Preço Total",
             }
         }
     }

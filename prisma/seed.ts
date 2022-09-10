@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma } from "@prisma/client";
+import { addDays, startOfDay, subDays } from "date-fns"
 
 const prisma = new PrismaClient()
 
@@ -134,22 +135,31 @@ async function seedInventoryManagement() {
             address: "Largo da Graça 48, 1170-165 Lisboa",
         }
     })
-    const stock = await prisma.inventoryStock.createMany({
+    await prisma.inventoryStock.createMany({
         data: inventory.map(i => ({
             warehouseId: warehouse.id,
             itemId: i.id,
             quantity: 5
         }))
     })
-    const today = new Date()
-    today.setUTCHours(0, 0, 0, 0)
-    const history = await prisma.inventoryStockHistory.createMany({
-        data: inventory.map(i => ({
-            warehouseId: warehouse.id,
-            itemId: i.id,
-            date: today,
-            quantity: 5
-        }))
+
+    const start = startOfDay(subDays(new Date(), 30))
+    await prisma.inventoryStockHistory.createMany({
+        data: inventory.flatMap(item => {
+            const history = [...Array(29)].map((_, i) => ({
+                warehouseId: warehouse.id,
+                itemId: item.id,
+                date: addDays(start, i),
+                quantity: Math.max(5 + Math.trunc(Math.random() * 5 - 2.5), 0)
+            }))
+            history.push({
+                warehouseId: warehouse.id,
+                itemId: item.id,
+                date: addDays(start, 29),
+                quantity: 5
+            })
+            return history
+        })
     })
 }
 

@@ -137,3 +137,11 @@ export const useInventory = (cursor: string | null, limit: number, filter?: stri
     })
     return { ...inventory, mutate, increaseStock, decreaseStock, invalidate }
 }
+
+export const useInventoryStockHistory = (itemId: string, daysBefore: number) => {
+    const start = new Date()
+    start.setUTCHours(0, 0, 0, 0)
+    start.setDate(start.getDate() - daysBefore)
+    const history = trpc.useQuery(["inventory.getStockHistory", { itemId, start }])
+    return { ...history }
+}

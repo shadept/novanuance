@@ -1,13 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createColumnHelper, flexRender, getCoreRowModel, PaginationState, useReactTable } from "@tanstack/react-table"
+import { ApexOptions } from 'apexcharts'
 import classNames from "classnames"
+import dynamic from 'next/dynamic'
 import { ButtonHTMLAttributes, DetailedHTMLProps, useLayoutEffect, useMemo, useRef, useState } from "react"
 import CurrencyInput from 'react-currency-input-field'
 import { Controller, useForm } from "react-hook-form"
 import { Trans, useTranslation } from 'react-i18next'
 import * as z from 'zod'
 import { Toggle } from '../components/toggle'
-import { InventoryItem, InventoryItemInput, useDebouncedEffect, useEvent, useInventory } from "../lib/hooks"
+import { InventoryItem, InventoryItemInput, useDebouncedEffect, useEvent, useInventory, useInventoryStockHistory } from "../lib/hooks"
+
+const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false })
 
 const columnHelper = createColumnHelper<InventoryItem>()
 
@@ -26,6 +30,7 @@ const Inventory: React.FC<InventoryProps> = () => {
 
     const [stockMode, setStockMode] = useState<"none" | "increase" | "decrease">("none")
     const [selectedItem, setSelectedItem] = useState<ModalInventoryItem>()
+    const [selectedChart, setSelectedChart] = useState<InventoryItem>()
     const InventoryColumns = useMemo(() => [
         columnHelper.accessor("name", {
             header: () => t("inventory.name"),
@@ -48,8 +53,18 @@ const Inventory: React.FC<InventoryProps> = () => {
             },
         }),
         columnHelper.display({
+            header: t("inventory.totalPrice") as string,
+            cell: info => {
+                const { quantity, price } = info.row.original
+                const value = quantity * price
+                return value.toFixed(2) + " €"
+            },
+            footer: ({ table }) => table.getFilteredRowModel().rows
+                .reduce((total, row) => total + row.getValue<number>("quantity") * row.getValue<number>("price"), 0.0).toFixed(2) + " €"
+        }),
+        columnHelper.display({
             header: t("inventory.actions") as string,
-            cell: info => <RowActions item={info.row.original} onEdit={setSelectedItem} onRemove={() => { }} />,
+            cell: info => <RowActions item={info.row.original} onEdit={setSelectedItem} onChart={setSelectedChart} onRemove={() => { }} />,
         })
     ], [])
 
@@ -192,6 +207,7 @@ const Inventory: React.FC<InventoryProps> = () => {
                 </div>
             </div>
             {selectedItem && <InventoryItemModal item={selectedItem} onSave={handleSave} onClose={handleClose} />}
+            {selectedChart && <InventoryChartModal item={selectedChart} onClose={() => setSelectedChart(undefined)} />}
         </>
     )
 }
@@ -199,15 +215,17 @@ const Inventory: React.FC<InventoryProps> = () => {
 type RowActionsProps = {
     item: InventoryItem
     onEdit: (item: InventoryItem) => void
+    onChart: (item: InventoryItem) => void
     onRemove: (item: InventoryItem) => void
 }
 
-const RowActions: React.FC<RowActionsProps> = ({ item, onEdit, onRemove }) => {
+const RowActions: React.FC<RowActionsProps> = ({ item, onEdit, onChart, onRemove }) => {
     const { t } = useTranslation()
 
     return (
         <div className="flex items-center gap-2">
             <Button title={t("inventory.edit")} onClick={() => onEdit(item)}><i className="fa-solid fa-pencil"></i></Button>
+            <Button title={t("inventory.history")} onClick={() => onChart(item)}><i className="fa-solid fa-chart-line"></i></Button>
             <Button title={t("inventory.remove")} onClick={() => onRemove(item)}><i className="fa-solid fa-trash-can"></i></Button>
         </div>
     )
@@ -313,6 +331,57 @@ const InventoryItemModal: React.FC<InventorItemModalProps> = ({ item, onSave, on
         </Modal>
     )
 }
+
+type InventorChartModalProps = {
+    item: InventoryItem
+    onClose: () => void
+}
+
+const InventoryChartModal: React.FC<InventorChartModalProps> = ({ item, onClose }) => {
+    const { t } = useTranslation()
+    const [days, setDays] = useState(30)
+    const options: ApexOptions = useMemo(() => ({
+        chart: {
+            type: "line",
+            toolbar: { show: false },
+            animations: { enabled: false },
+        },
+        stroke: {
+            curve: "stepline",
+            width: 3,
+        },
+        tooltip: {
+            x: { format: "yyyy MMM dd" },
+        },
+        yaxis: {
+            tickAmount: 1,
+        },
+        xaxis: {
+            type: "datetime",
+        },
+    }), [])
+
+    const { data } = useInventoryStockHistory(item.id, days)
+    const series: ApexOptions['series'] = [
+        {
+            name: t("inventory.in_stock"),
+            data: data?.map(d => ({ y: d.quantity, x: d.date })) ?? [],
+        }
+    ]
+
+    return (
+        <Modal title={`${item.brand} - ${item.name} / ` + t("inventory.history")} onClose={onClose}>
+            <select title={t("inventory.days")} value={days} onChange={e => setDays(Number(e.target.value))}>
+                <option value={7}>7</option>
+                <option value={15}>15</option>
+                <option value={30}>30</option>
+            </select>
+            <label className="p-2">{t("inventory.days")}</label>
+            <ReactApexChart options={options} series={series} width={800} height={600} />
+        </Modal>
+    )
+}
+
 
 type ModalProps = {
     title: string
