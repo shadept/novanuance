@@ -4,6 +4,10 @@ import { initReactI18next } from 'react-i18next'
 const resources: Resource = {
     en: {
         translation: {
+            "yes": "Yes",
+            "no": "No",
+            "yes_remove": "Yes, remove it",
+            "no_remove": "No, don't remove",
             "Loading": "Loading...",
             "Year": "Year",
             "Month": "Month",
@@ -46,11 +50,13 @@ const resources: Resource = {
                 "brand": "Brand",
                 "create": "Create",
                 "creating": "Creation",
+                "days": "Days",
                 "description": "Description",
                 "decrease_stock": "Decrease Stock",
                 "edit": "Edit",
                 "editing": "Editing",
                 "first": "First",
+                "history": "History",
                 "in_stock": "In Stock",
                 "increase_stock": "Increase Stock",
                 "last": "Last",
@@ -61,13 +67,19 @@ const resources: Resource = {
                 "previous": "Previous",
                 "price": "Price",
                 "remove": "Remove",
+                "removePrompt": "Are you sure you want to remove {{name}} - {{brand}}?",
                 "save": "Save",
                 "search_placeholder": "Barcode or product name",
+                "totalPrice": "Total Price",
             }
         }
     },
     pt: {
         translation: {
+            "yes": "Sim",
+            "no": "Não",
+            "yes_remove": "Remover",
+            "no_remove": "Não remover",
             "Loading": "A carregar...",
             "Year": "Ano",
             "Month": "Mês",
@@ -110,11 +122,13 @@ const resources: Resource = {
                 "brand": "Marca",
                 "create": "Criar",
                 "creating": "Criando",
+                "days": "Dias",
                 "decrease_stock": "Diminuir stock",
                 "description": "Descrição",
                 "edit": "Editar",
                 "editing": "Editando",
                 "first": "Primeira",
+                "history": "Histórico",
                 "in_stock": "Em stock",
                 "increase_stock": "Aumentar stock",
                 "last": "Última",
@@ -125,8 +139,10 @@ const resources: Resource = {
                 "previous": "Anterior",
                 "price": "Preço",
                 "remove": "Remover",
+                "removePrompt": "Tem certesa que pretende remover <i>{{name}} - {{brand}}</i>?",
                 "save": "Gravar",
                 "search_placeholder": "Código de barras ou nome do producto",
+                "totalPrice": "Preço Total",
             }
         }
     }

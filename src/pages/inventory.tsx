@@ -1,13 +1,18 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createColumnHelper, flexRender, getCoreRowModel, PaginationState, useReactTable } from "@tanstack/react-table"
-import classNames from "classnames"
-import { ButtonHTMLAttributes, DetailedHTMLProps, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { ApexOptions } from 'apexcharts'
+import dynamic from 'next/dynamic'
+import { useLayoutEffect, useMemo, useRef, useState } from "react"
 import CurrencyInput from 'react-currency-input-field'
 import { Controller, useForm } from "react-hook-form"
 import { Trans, useTranslation } from 'react-i18next'
 import * as z from 'zod'
+import { Button } from '../components/button'
+import { Modal, RemovePromptModal } from '../components/modal'
 import { Toggle } from '../components/toggle'
-import { InventoryItem, InventoryItemInput, useDebouncedEffect, useEvent, useInventory } from "../lib/hooks"
+import { InventoryItem, InventoryItemInput, useDebouncedEffect, useEvent, useInventory, useInventoryStockHistory } from "../lib/hooks"
+
+const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false })
 
 const columnHelper = createColumnHelper<InventoryItem>()
 
@@ -26,6 +31,9 @@ const Inventory: React.FC<InventoryProps> = () => {
 
     const [stockMode, setStockMode] = useState<"none" | "increase" | "decrease">("none")
     const [selectedItem, setSelectedItem] = useState<ModalInventoryItem>()
+    const [selectedChart, setSelectedChart] = useState<InventoryItem>()
+    const [pendingRemove, setPendingRemove] = useState<InventoryItem>()
+
     const InventoryColumns = useMemo(() => [
         columnHelper.accessor("name", {
             header: () => t("inventory.name"),
@@ -48,8 +56,18 @@ const Inventory: React.FC<InventoryProps> = () => {
             },
         }),
         columnHelper.display({
+            header: t("inventory.totalPrice") as string,
+            cell: info => {
+                const { quantity, price } = info.row.original
+                const value = quantity * price
+                return value.toFixed(2) + " €"
+            },
+            footer: ({ table }) => table.getFilteredRowModel().rows
+                .reduce((total, row) => total + row.getValue<number>("quantity") * row.getValue<number>("price"), 0.0).toFixed(2) + " €"
+        }),
+        columnHelper.display({
             header: t("inventory.actions") as string,
-            cell: info => <RowActions item={info.row.original} onEdit={setSelectedItem} onRemove={() => { }} />,
+            cell: info => <RowActions item={info.row.original} onEdit={setSelectedItem} onChart={setSelectedChart} onRemove={setPendingRemove} />,
         })
     ], [])
 
@@ -60,7 +78,7 @@ const Inventory: React.FC<InventoryProps> = () => {
     const cursorByPage = useRef<Map<number, string | null>>(new Map())
 
     const pendingActions = useRef<Array<(newData: Exclude<typeof data, undefined>) => Promise<void>>>([])
-    const { data, mutate, increaseStock, decreaseStock, invalidate } = useInventory(
+    const { data, mutate, remove, increaseStock, decreaseStock, invalidate } = useInventory(
         cursorByPage.current.get(pagination.pageIndex) ?? null, pagination.pageSize, filter,
         async (newData) => {
             cursorByPage.current.set(pagination.pageIndex + 1, newData.nextCursor)
@@ -108,14 +126,22 @@ const Inventory: React.FC<InventoryProps> = () => {
         setSearchTerm(e.target.value)
     })
 
-    const handleSave = useEvent((item: InventoryItemInput) => {
-        mutate(item)
+    const handleSave = useEvent(async (item: InventoryItemInput) => {
+        await mutate(item)
         setSelectedItem(undefined)
         inputRef.current?.focus()
     })
 
     const handleClose = useEvent(() => {
         setSelectedItem(undefined)
+        inputRef.current?.focus()
+    })
+
+    const handleRemove = useEvent(async () => {
+        if (pendingRemove !== undefined) {
+            await remove(pendingRemove)
+            setPendingRemove(undefined)
+        }
         inputRef.current?.focus()
     })
 
@@ -192,6 +218,12 @@ const Inventory: React.FC<InventoryProps> = () => {
                 </div>
             </div>
             {selectedItem && <InventoryItemModal item={selectedItem} onSave={handleSave} onClose={handleClose} />}
+            {selectedChart && <InventoryChartModal item={selectedChart} onClose={() => setSelectedChart(undefined)} />}
+            {pendingRemove && <RemovePromptModal title={t("inventory.remove")} prompt={
+                <Trans t={t} i18nKey={"inventory.removePrompt"}
+                    components={{ b: <span className="font-medium" /> }}
+                    values={pendingRemove} />}
+                preferredChoice='no' onYes={handleRemove} onNo={() => setPendingRemove(undefined)} />}
         </>
     )
 }
@@ -199,15 +231,17 @@ const Inventory: React.FC<InventoryProps> = () => {
 type RowActionsProps = {
     item: InventoryItem
     onEdit: (item: InventoryItem) => void
+    onChart: (item: InventoryItem) => void
     onRemove: (item: InventoryItem) => void
 }
 
-const RowActions: React.FC<RowActionsProps> = ({ item, onEdit, onRemove }) => {
+const RowActions: React.FC<RowActionsProps> = ({ item, onEdit, onChart, onRemove }) => {
     const { t } = useTranslation()
 
     return (
         <div className="flex items-center gap-2">
             <Button title={t("inventory.edit")} onClick={() => onEdit(item)}><i className="fa-solid fa-pencil"></i></Button>
+            <Button title={t("inventory.history")} onClick={() => onChart(item)}><i className="fa-solid fa-chart-line"></i></Button>
             <Button title={t("inventory.remove")} onClick={() => onRemove(item)}><i className="fa-solid fa-trash-can"></i></Button>
         </div>
     )
@@ -314,47 +348,54 @@ const InventoryItemModal: React.FC<InventorItemModalProps> = ({ item, onSave, on
     )
 }
 
-type ModalProps = {
-    title: string
-    onClose?: () => void
-    children: React.ReactNode
+type InventorChartModalProps = {
+    item: InventoryItem
+    onClose: () => void
 }
 
-const Modal: React.FC<ModalProps> = ({ title, children, onClose }) => {
+const InventoryChartModal: React.FC<InventorChartModalProps> = ({ item, onClose }) => {
+    const { t } = useTranslation()
+    const [days, setDays] = useState(30)
+    const options: ApexOptions = useMemo(() => ({
+        chart: {
+            type: "line",
+            toolbar: { show: false },
+            animations: { enabled: false },
+        },
+        stroke: {
+            curve: "stepline",
+            width: 3,
+        },
+        tooltip: {
+            x: { format: "yyyy MMM dd" },
+        },
+        yaxis: {
+            tickAmount: 1,
+        },
+        xaxis: {
+            type: "datetime",
+        },
+    }), [])
+
+    const { data } = useInventoryStockHistory(item.id, days)
+    const series: ApexOptions['series'] = [
+        {
+            name: t("inventory.in_stock"),
+            data: data?.map(d => ({ y: d.quantity, x: d.date })) ?? [],
+        }
+    ]
+
     return (
-        <>
-            <div className="fixed flex items-center justify-center overflow-x-hidden overflow-y-auto inset-0 z-50 outline-none focus:outline-none">
-                <div className="relative w-auto my-6 mx-auto max-w-4xl">
-                    <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
-                        {/* Header */}
-                        <div className="flex items-start justify-between p-5 border-b border-solid border-slate-200">
-                            <h3 className="text-3xl font-semibold">
-                                {title}
-                            </h3>
-                            <div className="text-lg my-auto px-2" onClick={onClose}>
-                                <i className="fa-solid fa-xmark"></i>
-                            </div>
-                        </div>
-                        {/* Content */}
-                        <div className="relative p-6 flex-auto">
-                            {children}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div className="opacity-25 fixed inset-0 z-40 bg-black"></div>
-        </>
+        <Modal title={`${item.brand} - ${item.name} / ` + t("inventory.history")} onClose={onClose}>
+            <select title={t("inventory.days")} value={days} onChange={e => setDays(Number(e.target.value))}>
+                <option value={7}>7</option>
+                <option value={15}>15</option>
+                <option value={30}>30</option>
+            </select>
+            <label className="p-2">{t("inventory.days")}</label>
+            <ReactApexChart options={options} series={series} width={800} height={600} />
+        </Modal>
     )
 }
-
-type ButtonProps = DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>
-const Button: React.FC<ButtonProps> = ({ children, className, ...rest }) => {
-    return (
-        <button type="button" className={classNames("relative inline-flex items-center p-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 disabled:bg-gray-300 hover:bg-gray-50", className)} {...rest}>
-            {children}
-        </button>
-    )
-}
-
 
 export default Inventory

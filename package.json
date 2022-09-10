@@ -1,6 +1,6 @@
 {
   "name": "nova-nuance",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -17,9 +17,12 @@
     "@trpc/next": "^9.26.0",
     "@trpc/react": "^9.26.0",
     "@trpc/server": "^9.26.0",
+    "apexcharts": "^3.35.5",
     "classnames": "^2.3.1",
+    "date-fns": "^2.29.2",
     "next": "12.2.0",
     "react": "18.2.0",
+    "react-apexcharts": "^1.4.0",
     "react-currency-input-field": "^3.6.4",
     "react-dom": "18.2.0",
     "react-hook-form": "^7.34.0",
