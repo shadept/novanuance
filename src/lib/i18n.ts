@@ -70,6 +70,8 @@ const resources: Resource = {
                 "removePrompt": "Are you sure you want to remove {{name}} - {{brand}}?",
                 "save": "Save",
                 "search_placeholder": "Barcode or product name",
+                "subBrand": "Model",
+                "tags": "Tags",
                 "totalPrice": "Total Price",
             }
         }
@@ -142,6 +144,8 @@ const resources: Resource = {
                 "removePrompt": "Tem certesa que pretende remover <i>{{name}} - {{brand}}</i>?",
                 "save": "Gravar",
                 "search_placeholder": "Código de barras ou nome do producto",
+                "subBrand": "Modelo",
+                "tags": "Tags",
                 "totalPrice": "Preço Total",
             }
         }

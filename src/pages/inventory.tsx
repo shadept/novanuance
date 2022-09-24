@@ -2,10 +2,11 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { createColumnHelper, flexRender, getCoreRowModel, PaginationState, useReactTable } from "@tanstack/react-table"
 import { ApexOptions } from 'apexcharts'
 import dynamic from 'next/dynamic'
-import { useLayoutEffect, useMemo, useRef, useState } from "react"
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import CurrencyInput from 'react-currency-input-field'
-import { Controller, useForm } from "react-hook-form"
+import { Controller, useController, UseControllerProps, useForm } from "react-hook-form"
 import { Trans, useTranslation } from 'react-i18next'
+import { ReactTagsProps, WithContext as ReactTags } from 'react-tag-input'
 import * as z from 'zod'
 import { Button } from '../components/button'
 import { Modal, RemovePromptModal } from '../components/modal'
@@ -41,7 +42,7 @@ const Inventory: React.FC<InventoryProps> = () => {
         }),
         columnHelper.accessor("brand", {
             header: () => t("inventory.brand"),
-            cell: info => info.renderValue(),
+            cell: info => [info.renderValue(), info.row.original.subBrand].filter(x => !!x).join(" / "),
         }),
         columnHelper.accessor("quantity", {
             header: () => t("inventory.in_stock"),
@@ -250,12 +251,14 @@ const RowActions: React.FC<RowActionsProps> = ({ item, onEdit, onChart, onRemove
 function makeInventoryItem(barcode?: string, initialStock: number = 0): ModalInventoryItem {
     return {
         brand: "",
+        subBrand: "",
         name: "",
         quantity: initialStock,
         price: 0,
         barcode: barcode ?? "",
         imageUrl: undefined,
-        description: undefined
+        description: undefined,
+        tags: [],
     }
 }
 
@@ -264,11 +267,13 @@ type PartialKeys<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 const inventoryItemSchema = z.object({
     id: z.string().cuid().nullish(),
     brand: z.string().min(1),
+    subBrand: z.string().nullish(),
     name: z.string().min(1),
     price: z.string().transform(Number),
     quantity: z.number().min(0),
     barcode: z.string().min(8).max(14),
     description: z.string(),
+    tags: z.array(z.string()),
 })
 
 type ModalInventoryItem = PartialKeys<InventoryItem, 'id'>
@@ -278,11 +283,18 @@ type InventorItemModalProps = {
     onClose: () => void
 }
 
+const reactTagsClassNames: ReactTagsProps["classNames"] = {
+    tag: "inline-block p-1 mb-1 mr-1 bg-blue-500 text-white",
+    remove: "pl-1 text-white",
+    tagInputField: "inline-block p-1 border rounded w-full text-gray-700",
+
+}
+
+type InventoryItemFormState = Omit<InventoryItem, 'price'> & { price: string }
 const InventoryItemModal: React.FC<InventorItemModalProps> = ({ item, onSave, onClose }) => {
     const { t } = useTranslation()
-    type InventoryItemFormState = Omit<InventoryItem, 'price'> & { price: string }
     const { register, control, handleSubmit, formState: { errors } } = useForm<InventoryItemFormState>({
-        defaultValues: { ...item, price: item.price.toFixed(2) },
+        defaultValues: { ...item, price: item.price.toFixed(2), },
         resolver: zodResolver(inventoryItemSchema)
     })
     const isCreating = item.id === undefined
@@ -297,8 +309,13 @@ const InventoryItemModal: React.FC<InventorItemModalProps> = ({ item, onSave, on
         <Modal title={isCreating ? t("inventory.creating") : t("inventory.editing")} onClose={onClose}>
             <form onSubmit={handleSubmit(handleSave)}>
                 <div className="grid grid-cols-3 gap-4" >
-                    <div className="row-span-2">
+                    <div className="row-span-3">
                         <img className="m-auto h-40" alt="" src={item.imageUrl} />
+                    </div>
+                    <div className="col-span-2">
+                        <label className="ml-2">{t("inventory.name")}:</label>
+                        <input className="border rounded w-full py-2 px-3 text-gray-700" {...register("name")} />
+                        {errors.name?.message && <p className="text-red-500">{errors.name?.message}</p>}
                     </div>
                     <div>
                         <label className="ml-2">{t("inventory.brand")}:</label>
@@ -306,9 +323,9 @@ const InventoryItemModal: React.FC<InventorItemModalProps> = ({ item, onSave, on
                         {errors.brand?.message && <p className="text-red-500">{errors.brand?.message}</p>}
                     </div>
                     <div>
-                        <label className="ml-2">{t("inventory.name")}:</label>
-                        <input className="border rounded w-full py-2 px-3 text-gray-700" {...register("name")} />
-                        {errors.name?.message && <p className="text-red-500">{errors.name?.message}</p>}
+                        <label className="ml-2">{t("inventory.subBrand")}:</label>
+                        <input className="border rounded w-full py-2 px-3 text-gray-700" {...register("subBrand")} />
+                        {errors.brand?.message && <p className="text-red-500">{errors.subBrand?.message}</p>}
                     </div>
                     <div>
                         <label className="ml-2">{t("inventory.price")}:</label>
@@ -316,7 +333,7 @@ const InventoryItemModal: React.FC<InventorItemModalProps> = ({ item, onSave, on
                             render={({ field: { onChange, value } }) => (
                                 <CurrencyInput className="border rounded w-full py-2 px-3 text-gray-700"
                                     suffix="&nbsp;€" decimalScale={2}
-                                    value={value} onValueChange={onChange} />
+                                    value={value} onValueChange={v => onChange(v)} />
                             )}
                         />
                         {errors.price?.message && <p className="text-red-500">{errors.price?.message}</p>}
@@ -331,10 +348,27 @@ const InventoryItemModal: React.FC<InventorItemModalProps> = ({ item, onSave, on
                         <input className="border rounded w-full py-2 px-3 text-gray-700" disabled {...register("barcode")} />
                         {errors.barcode?.message && <p className="text-red-500">{errors.barcode?.message}</p>}
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-2 row-span-2">
                         <label className="ml-2">{t("inventory.description")}:</label>
                         <textarea className="border rounded w-full py-2 px-3 text-gray-700" {...register("description")} rows={3} />
                         {errors.description?.message && <p className="text-red-500">{errors.description?.message}</p>}
+                    </div>
+                    <div>
+                        {/* <Tags control={control} name="tags" /> */}
+                        <label className="ml-2">{t("inventory.tags")}:</label>
+                        <Controller name="tags" control={control}
+                            render={({ field: { onChange, value, ref } }) => (
+                                <ReactTags ref={ref} tags={value.map(t => ({ id: t, text: t }))}
+                                    handleAddition={t => {
+                                        onChange([...value, t.text.toLowerCase()])
+                                    }}
+                                    handleDelete={idx => {
+                                        onChange(value.filter((_, i) => i !== idx))
+                                    }}
+                                    classNames={reactTagsClassNames}/>
+                            )}
+                        />
+                        {errors.price?.message && <p className="text-red-500">{errors.price?.message}</p>}
                     </div>
                 </div>
                 <hr className="my-3" />
@@ -345,6 +379,25 @@ const InventoryItemModal: React.FC<InventorItemModalProps> = ({ item, onSave, on
                 </div>
             </form>
         </Modal>
+    )
+}
+
+const Tags: React.FC<UseControllerProps<InventoryItemFormState>> = ({ control }) => {
+    const { field } = useController({ control, name: "tags", defaultValue: [] })
+    const [values, setValues] = useState(field.value)
+
+    return (
+        <ReactTags tags={values.map(t => ({ id: t, text: t }))}
+            handleAddition={t => {
+                const newValue = [...values, t.text]
+                field.onChange(newValue)
+                setValues(newValue)
+            }}
+            handleDelete={idx => {
+                const newValue = values.filter((_, i) => i !== idx)
+                field.onChange(newValue)
+                setValues(newValue)
+            }} />
     )
 }
 

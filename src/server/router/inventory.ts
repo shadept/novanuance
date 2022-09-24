@@ -2,16 +2,17 @@ import { InventoryItem, InventoryStockHistory, Prisma, PrismaClient } from "@pri
 import { z } from "zod";
 import { createRouter } from "./context";
 
-type Inventory = InventoryItem
 
 const toDto = (item: InventoryItem & { stock: { quantity: number; }[] }) => ({
     id: item.id,
     brand: item.brand,
+    subBrand: item.subBrand,
     name: item.name,
     price: item.price.toNumber(),
     quantity: item.stock.reduce((q, s) => q + s.quantity, 0),
     imageUrl: item.imageUrl ?? undefined,
     barcode: item.barcode,
+    tags: item.tags,
     description: item.description ?? undefined,
 })
 
@@ -139,6 +140,7 @@ export const inventoryRouter = createRouter()
             quantity: z.number(),
             imageUrl: z.string().nullish(),
             description: z.string().nullish(),
+            tags: z.array(z.string()),
         }),
         async resolve({ ctx, input }) {
             const warehouse = await ctx.prisma.warehouse.findFirst()
@@ -147,7 +149,6 @@ export const inventoryRouter = createRouter()
                 return ctx.res.status(404)
             }
 
-            console.log("upserting", input)
             const obj = {
                 brand: input.brand,
                 name: input.name,
@@ -155,6 +156,7 @@ export const inventoryRouter = createRouter()
                 imageUrl: input.imageUrl,
                 barcode: input.barcode,
                 description: input.description,
+                tags: input.tags,
             }
 
             const oldStock = await ctx.prisma.inventoryStock.findUnique({
