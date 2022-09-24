@@ -42,6 +42,7 @@ async function seedEmployeeManagement() {
                 thresholdForCommission: 0.0,
                 taxRate: 0.0,
                 hireDate: new Date("1970-01-01"),
+                terminationDate: new Date("2022-07-23")
             },
             {
                 name: "Isabel",

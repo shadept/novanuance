@@ -44,21 +44,23 @@ model Vacation {
 }
 
 model Warehouse {
-    id                    String                  @id @default(cuid())
-    name                  String
-    address               String
-    stock                 InventoryStock[]
-    InventoryStockHistory InventoryStockHistory[]
+    id           String                  @id @default(cuid())
+    name         String
+    address      String
+    stock        InventoryStock[]
+    stockHistory InventoryStockHistory[]
 }
 
 model InventoryItem {
     id           String                  @id @default(cuid())
     barcode      String                  @unique
     brand        String
+    subBrand     String?
     name         String
     price        Decimal
     imageUrl     String?
     description  String?
+    tags         String[]
     stock        InventoryStock[]
     stockHistory InventoryStockHistory[]
 }
@@ -76,8 +78,8 @@ model InventoryStock {
 model InventoryStockHistory {
     warehouseId String
     itemId      String
-    quantity    Int
     date        DateTime
+    quantity    Int
     warehouse   Warehouse     @relation(fields: [warehouseId], references: [id])
     item        InventoryItem @relation(fields: [itemId], references: [id])
 

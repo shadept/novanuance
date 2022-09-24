@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   docker:
@@ -54,3 +57,4 @@ jobs:
           tags: |
             ghcr.io/shadept/novanuance:${{steps.package-version.outputs.current-version}}
             ghcr.io/shadept/novanuance:latest
+        if: github.ref_name == 'main'
