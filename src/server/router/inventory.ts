@@ -53,6 +53,7 @@ export const inventoryRouter = createRouter()
                 OR: input.filter ? [
                     { name: { contains: input.filter, mode: "insensitive" } },
                     { brand: { contains: input.filter, mode: "insensitive" } },
+                    { subBrand: { contains: input.filter, mode: "insensitive" } },
                     { barcode: { startsWith: input.filter } },
                 ] : undefined,
             }
