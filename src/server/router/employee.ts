@@ -23,13 +23,14 @@ export const employeeRouter = createRouter()
             excludeOwner: z.boolean().default(false),
         }),
         async resolve({ ctx, input }) {
-            const date = new Date(input.year, input.month - 1, 1);
+            const startOfMonth = new Date(input.year, input.month - 1, 1);
+            const endOfMonth = new Date(input.year, input.month, 1);
             const employees = await ctx.prisma.employee.findMany({
                 where: {
                     title: input.excludeOwner ? { not: "owner" } : undefined,
-                    hireDate: { lte: date },
+                    hireDate: { lt: endOfMonth },
                     OR: [
-                        { terminationDate: { gte: date } },
+                        { terminationDate: { gte: startOfMonth } },
                         { terminationDate: null }
                     ]
                 },
