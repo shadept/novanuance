@@ -42,7 +42,6 @@ jobs:
           set -x
           npm ci -f
           npx prisma generate
-          npm version patch --git-tag-version false
           npm run build
 
       - name: Get NPM version
