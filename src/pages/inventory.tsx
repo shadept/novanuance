@@ -127,7 +127,7 @@ const Inventory: React.FC<InventoryProps> = () => {
         setSearchTerm(e.target.value)
     })
 
-    const handleSave = useEvent(async (item: InventoryItemInput) => {
+    const handleSave = useEvent(async (item: ModalInventoryItem) => {
         await mutate(item)
         setSelectedItem(undefined)
         inputRef.current?.focus()

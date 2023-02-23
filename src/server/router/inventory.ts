@@ -6,7 +6,7 @@ import { createRouter } from "./context";
 const toDto = (item: InventoryItem & { stock: { quantity: number; }[] }) => ({
     id: item.id,
     brand: item.brand,
-    subBrand: item.subBrand,
+    subBrand: item.subBrand ?? undefined,
     name: item.name,
     price: item.price.toNumber(),
     quantity: item.stock.reduce((q, s) => q + s.quantity, 0),
@@ -92,7 +92,7 @@ export const inventoryRouter = createRouter()
                 return []
             }
 
-            const history = await ctx.prisma.inventoryStockHistory.findMany({
+            const history: InventoryStockHistory[] = await ctx.prisma.inventoryStockHistory.findMany({
                 where: {
                     warehouseId: warehouse.id,
                     itemId: input.itemId,
@@ -136,6 +136,7 @@ export const inventoryRouter = createRouter()
             id: z.string().nullish(),
             barcode: z.string(),
             brand: z.string(),
+            subBrand: z.string().nullish(),
             name: z.string(),
             price: z.number(),
             quantity: z.number(),
@@ -152,6 +153,7 @@ export const inventoryRouter = createRouter()
 
             const obj = {
                 brand: input.brand,
+                subBrand: input.subBrand,
                 name: input.name,
                 price: input.price,
                 imageUrl: input.imageUrl,
