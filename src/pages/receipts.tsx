@@ -109,13 +109,9 @@ const ReceiptCalendarRow: React.FC<ReceiptCalendarRowProps> = ({ index, start, e
     // Need to memoize for useCallback below
     const current = useMemo(() => {
         const value = new Date(start)
-        value.setDate(value.getDate() + index)
+        value.setUTCDate(value.getUTCDate() + index)
         return value
     }, [start, index])
-
-    const tomorrow = new Date()
-    tomorrow.setHours(0, 0, 0, 0)
-    tomorrow.setDate(tomorrow.getDate() + 1)
     const holiday = holidays.find(h => isEqual(h.date, current))
     const isWorkingDay = workdays.includes(current.getDay()) && holiday === undefined
 
@@ -125,6 +121,11 @@ const ReceiptCalendarRow: React.FC<ReceiptCalendarRowProps> = ({ index, start, e
     const date = current.toJSON().substring(0, 10)
     const previousMonday = new Date(current)
     previousMonday.setDate(current.getDate() - (current.getDay() === 0 ? 7 : current.getDay()))
+
+    // Real time tomorrow to disallow settings receipts for future dates
+    const tomorrow = new Date()
+    tomorrow.setUTCHours(0, 0, 0, 0)
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
 
     return (
         <tr>
