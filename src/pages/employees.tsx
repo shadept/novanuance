@@ -205,7 +205,7 @@ const EmployeeSummaryRecites: React.FC<EmployeeSummaryRecitesProps> = ({ year, m
                         <th></th>
                         {[...Array<number>(daysInMonth)].map((_, i) => {
                             const current = new Date(start)
-                            current.setDate(current.getDate() + i)
+                            current.setUTCDate(current.getUTCDate() + i)
                             return <th key={i} className="border px-1 py-2 text-center font-medium text-gray-500 vertical-rl">{current.toJSON().substring(0, 10)}</th>
                         })}
                     </tr>
@@ -217,7 +217,7 @@ const EmployeeSummaryRecites: React.FC<EmployeeSummaryRecitesProps> = ({ year, m
                         </td>
                         {Array.from(Array(daysInMonth)).map((_, i) => {
                             const current = new Date(start)
-                            current.setDate(start.getDate() + i)
+                            current.setUTCDate(start.getUTCDate() + i)
                             const receipt = receipts.find(r => isEqual(r.date, current))
                             return (
                                 <td key={i} className="border px-1 py-2 text-center text-gray-500 vertical-rl">

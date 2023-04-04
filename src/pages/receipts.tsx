@@ -120,7 +120,7 @@ const ReceiptCalendarRow: React.FC<ReceiptCalendarRowProps> = ({ index, start, e
     })
     const date = current.toJSON().substring(0, 10)
     const previousMonday = new Date(current)
-    previousMonday.setDate(current.getDate() - (current.getDay() === 0 ? 7 : current.getDay()))
+    previousMonday.setUTCDate(current.getUTCDate() - (current.getUTCDay() === 0 ? 7 : current.getUTCDay()))
 
     // Real time tomorrow to disallow settings receipts for future dates
     const tomorrow = new Date()

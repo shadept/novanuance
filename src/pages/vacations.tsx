@@ -91,12 +91,12 @@ const VacationCalendarRow: React.FC<VacationCalendarRowProps> = ({ start, index,
 
     const current = useMemo(() => {
         const value = new Date(start)
-        value.setDate(value.getDate() + index)
+        value.setUTCDate(value.getUTCDate() + index)
         return value
     }, [start, index])
 
     const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
     const holiday = holidays.find(h => isEqual(h.date, current))
     const isWorkingDay = workdays.includes(current.getDay()) && holiday === undefined
 
