@@ -112,6 +112,44 @@ export const inventoryRouter = createRouter()
             return history
         }
     })
+    .query("exportStocks", {
+        async resolve({ ctx }) {
+            const warehouse = await ctx.prisma.warehouse.findFirst()
+            if (warehouse === null) {
+                console.error("Missing warehouse")
+                return []
+            }
+
+            const items: { id: string, name: string }[] = await ctx.prisma.inventoryItem.findMany({
+                where: { warehouseId: warehouse.id },
+                select: { id: true, name: true },
+            })
+            const currentStock: { itemId: string, quantity: number }[] = await ctx.prisma.inventoryStock.findMany({
+                where: { warehouseId: warehouse.id },
+                select: { itemdId: true, quantity: true },
+            })
+            const historicalStock: { itemId: string, quantity: number, date: Date }[] = await ctx.prisma.inventoryStockHistory.findMany({
+                where: { warehouseId: warehouse.id },
+                select: { itemId: true, quantity: true, date: true },
+                orderBy: [{ date: "asc" }]
+            })
+
+            const today = new Date()
+            today.setUTCHours(0, 0, 0, 0)
+
+            const result = items.map(item => {
+                return ({
+                    itemId: item.id,
+                    name: item.name,
+                    stock: [
+                        ...historicalStock.filter(s => s.itemId === item.id),
+                        ...currentStock.filter(s => s.itemId === item.id).map(s => ({ ...s, date: today }))
+                    ]
+                })
+            })
+            return result
+        }
+    })
     .query("byBarcode", {
         input: z.string(),
         async resolve({ ctx, input }) {
